@@ -2,8 +2,8 @@ import {
   initHeroWebGL,
   initWebGLPrototypeBuilder,
   updateWebGLPrototype,
-  exportPrototypeGLB,
-  focusWebGLPrototypeView
+  setPrototypeView,
+  exportPrototypeGLB
 } from "./three-builder.js";
 
 const state = {
@@ -50,6 +50,8 @@ const controls = {
   bathrooms: document.getElementById("bathrooms"),
   furnishing: document.getElementById("furnishing")
 };
+let activePrototypeView = "exterior";
+
 const output = {
   storiesValue: document.getElementById("storiesValue"),
   basementValue: document.getElementById("basementValue"),
@@ -291,6 +293,44 @@ Please convert this concept into a professional house plan, structural review, d
 Important:
 This is a concept prototype only. Final construction must be reviewed and approved by qualified builders, architects, engineers and local authorities.`;
 }
+
+function mapStateToHouseDesign(state) {
+  return {
+    land: {
+      area: Number(state.landArea) || 600,
+      shape: state.landShape || "rectangular",
+      hasGarden: Boolean(state.includeGarden),
+      hasPool: Boolean(state.includePool),
+      hasDriveway: true
+    },
+    building: {
+      stories: Number(state.stories) || 1,
+      basementLevels: Number(state.basement) || 0,
+      shape: state.houseShape || "modern-box",
+      garage: state.garage || "double",
+      roofStyle: state.roofStyle || "gable",
+      wallColor: state.houseColor || "#e5e7eb",
+      roofColor: state.roofColor || "#111827"
+    },
+    exterior: {
+      windowStyle: state.windowStyle || "wide",
+      doorStyle: state.doorStyle || "timber",
+      hasSolar: Boolean(state.solarPanels),
+      hasBalcony: Boolean(state.balcony),
+      hasOutdoorArea: Boolean(state.outdoorArea)
+    },
+    interior: {
+      bedrooms: Number(state.bedrooms) || 4,
+      bathrooms: Number(state.bathrooms) || 3,
+      furnishingStyle: state.furnishing || "modern"
+    },
+    estimate: {
+      areaM2: typeof calculateArea === "function" ? calculateArea() : 462,
+      costAUD: typeof calculateCost === "function" ? calculateCost() : 956600
+    }
+  };
+}
+
 function render() {
   document.documentElement.style.setProperty("--house-color", state.houseColor);
   document.documentElement.style.setProperty("--roof-color", state.roofColor);
@@ -304,7 +344,8 @@ function render() {
   applyGarage();
   applyFeatures();
   updateSummary();
-  updateWebGLPrototype(state);
+  const houseDesign = mapStateToHouseDesign(state);
+  updateWebGLPrototype(houseDesign, activePrototypeView);
 }
 function syncStateFromControls() {
   state.landArea = Number(controls.landArea.value);
@@ -434,10 +475,13 @@ function handleViewTabs() {
     button.addEventListener("click", () => {
       buttons.forEach((btn) => btn.classList.remove("active"));
       button.classList.add("active");
-      const view = button.getAttribute("data-view") || "exterior";
-      model.prototypeScene.dataset.view = view;
-      setCameraPreset(view);
-      focusWebGLPrototypeView(view);
+      activePrototypeView = button.getAttribute("data-view") || "exterior";
+      model.prototypeScene.dataset.view = activePrototypeView;
+      setCameraPreset(activePrototypeView);
+      const houseDesign = mapStateToHouseDesign(state);
+      setPrototypeView(activePrototypeView);
+      // focusWebGLPrototypeView was replaced by setPrototypeView for the nested WebGL schema.
+      updateWebGLPrototype(houseDesign, activePrototypeView);
     });
   });
 }
@@ -613,8 +657,10 @@ function setupEventListeners() {
   document
     .getElementById("exportGlbBtn")
     ?.addEventListener("click", exportPrototypeGLB);
+  const initialHouseDesign = mapStateToHouseDesign(state);
   initHeroWebGL();
-  initWebGLPrototypeBuilder(state);
+  initWebGLPrototypeBuilder(initialHouseDesign);
+  setPrototypeView(activePrototypeView);
   handleViewTabs();
   setupPrototypeOrbit();
   setupPhotoUpload();
