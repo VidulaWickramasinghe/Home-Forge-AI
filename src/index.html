@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="HomeForge AI is a futuristic 3D interactive house design and visualization platform for designing, previewing, estimating, and exporting dream homes before construction begins." />
+    <meta property="og:title" content="HomeForge AI — Build Before You Build" />
+    <meta property="og:description" content="Design floor plans, customize materials, explore a 3D home, estimate costs, and export your concept." />
+    <meta property="og:type" content="website" />
+    <title>HomeForge AI — Build Before You Build</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main>
+      <section class="hero grid-bg" id="top">
+        <div class="orb orb-cyan"></div>
+        <div class="orb orb-gold"></div>
+        <nav class="nav glass reveal">
+          <a class="brand" href="#top" aria-label="HomeForge AI home">
+            <span class="brand-mark">⌂</span>
+            <span>HomeForge AI</span>
+          </a>
+          <div class="nav-links" aria-label="Main navigation">
+            <a href="#modules">Modules</a>
+            <a href="#explore">3D Preview</a>
+            <a href="#workflow">Workflow</a>
+            <a href="#pricing">Pricing</a>
+          </div>
+          <a class="nav-cta" href="#builder">Launch demo</a>
+        </nav>
+
+        <div class="hero-grid container">
+          <div class="hero-copy reveal">
+            <span class="eyebrow">✦ 3D Digital House Configurator</span>
+            <h1>Build your dream home before construction begins.</h1>
+            <p>
+              Design floor plans, customize interiors, explore the exterior, walk through
+              the house in 3D, estimate costs, and export a builder-ready concept package.
+            </p>
+            <div class="hero-actions">
+              <a class="button primary" href="#modules">Explore platform <span>→</span></a>
+              <a class="button secondary" href="#workflow">See workflow</a>
+            </div>
+            <div class="metrics" aria-label="Project preview metrics">
+              <div><strong>600 m²</strong><span>Land size</span></div>
+              <div><strong>4 Bed / 3 Bath</strong><span>AI layout</span></div>
+              <div><strong>$520k</strong><span>Cost preview</span></div>
+            </div>
+          </div>
+
+          <div class="showcase-card glass reveal" id="explore">
+            <div class="scene" aria-label="Animated 3D style house preview">
+              <div class="scene-floor"></div>
+              <div class="house" id="houseModel">
+                <div class="wall front"><span class="window wide"></span><span class="door"></span></div>
+                <div class="wall back"></div>
+                <div class="wall left"><span class="window side"></span></div>
+                <div class="wall right"><span class="window side"></span></div>
+                <div class="roof roof-a"></div>
+                <div class="roof roof-b"></div>
+              </div>
+              <div class="pool"></div>
+              <div class="driveway"></div>
+            </div>
+            <div class="scene-toolbar">
+              <button data-rotate="-18">Street view</button>
+              <button data-rotate="35">Garden view</button>
+              <button data-rotate="95">Side view</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="container product-section reveal">
+        <p class="kicker">Product Concept</p>
+        <h2>A digital showroom where homeowners can walk into the future of their home.</h2>
+        <p>
+          HomeForge AI turns a construction idea into an interactive planning journey:
+          plot setup, floor plans, generated 3D massing, materials, estimates, versions,
+          and exports for builders, architects, designers, and clients.
+        </p>
+      </section>
+
+      <section class="container section" id="modules">
+        <div class="section-heading reveal">
+          <p class="kicker">Complete Platform</p>
+          <h2>Every module needed to design, preview, and plan a house.</h2>
+          <p>Move from blank land to a full digital home with modular tools that explain the full design-to-construction journey.</p>
+        </div>
+        <div class="module-grid">
+          <article class="module glass reveal"><span>🌴</span><h3>Property & Site</h3><p>Create land boundaries, gardens, driveways, pools, slopes, fences, and outdoor lighting.</p></article>
+          <article class="module glass reveal"><span>▦</span><h3>Floor Plan Designer</h3><p>Draw walls, create rooms, set dimensions, add doors, windows, and multiple floors.</p></article>
+          <article class="module glass reveal"><span>🔨</span><h3>Structure Builder</h3><p>Configure foundations, columns, beams, structural walls, roof systems, and levels.</p></article>
+          <article class="module glass reveal"><span>🏠</span><h3>Exterior Customizer</h3><p>Customize roofs, facades, cladding, gutters, solar panels, windows, and doors.</p></article>
+          <article class="module glass reveal"><span>🎨</span><h3>Interior Designer</h3><p>Apply paint, wallpaper, flooring, ceilings, furniture, kitchen, and bathroom finishes.</p></article>
+          <article class="module glass reveal"><span>🤖</span><h3>AI Design Assistant</h3><p>Generate layouts, suggest room placement, recommend materials, and detect design issues.</p></article>
+          <article class="module glass reveal"><span>🧮</span><h3>Cost Estimation</h3><p>Estimate construction, materials, labor, interiors, landscaping, pools, and upgrades.</p></article>
+          <article class="module glass reveal"><span>📐</span><h3>Measurements</h3><p>Calculate room areas, wall lengths, roof area, floor area, and material quantities.</p></article>
+        </div>
+      </section>
+
+      <section class="container section builder-panel glass reveal" id="builder">
+        <div>
+          <p class="kicker gold">Builder MVP Preview</p>
+          <h2>Left tools. Center floor plan. Right live 3D. Bottom cost and measurements.</h2>
+          <p>The next product screen is designed around the technical target: a 2D editor that generates a live 3D house model.</p>
+        </div>
+        <div class="builder-ui">
+          <aside><b>Tools</b><span>Wall</span><span>Door</span><span>Window</span><span>Material</span></aside>
+          <div class="plan"><div></div><div></div><div></div><div></div><strong>2D Floor Plan</strong></div>
+          <aside><b>Live 3D</b><span>Orbit</span><span>Walkthrough</span><span>Roof</span><span>Export</span></aside>
+          <footer><span>Total area: 186 m²</span><span>Rooms: 8</span><span>Estimate: $520k</span></footer>
+        </div>
+      </section>
+
+      <section class="container section ai-grid" id="ai">
+        <div class="glass ai-copy reveal">
+          <p class="kicker">AI Design Assistant</p>
+          <h2>Enter your dream. Let AI generate the first concept.</h2>
+          <p>The assistant can generate layout suggestions, material palettes, cost ranges, room placement ideas, and design warnings.</p>
+        </div>
+        <div class="prompt-card reveal">
+          <span>✦ AI Prompt</span>
+          <p>Create a modern 600 m² family house with 4 bedrooms, 3 bathrooms, double garage, open kitchen, pool, and outdoor entertainment area.</p>
+          <ul>
+            <li>Suggested open-plan kitchen facing garden</li>
+            <li>Master bedroom placed away from noisy street side</li>
+            <li>Estimated construction range generated</li>
+            <li>3D concept ready for preview</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="container section workflow glass reveal" id="workflow">
+        <div>
+          <p class="kicker gold">User Journey</p>
+          <h2>From empty land to a full digital home.</h2>
+          <p>Guide users through a clear visual workflow for designing, customizing, estimating, and exporting before construction begins.</p>
+        </div>
+        <ol>
+          <li>Create plot</li><li>Design floor plan</li><li>Generate 3D model</li><li>Customize exterior</li><li>Design interior</li><li>Apply materials</li><li>Walk through house</li><li>Review cost</li><li>Export design</li>
+        </ol>
+      </section>
+
+      <section class="container section pricing" id="pricing">
+        <div class="section-heading reveal"><p class="kicker">SaaS Plans</p><h2>Built for homeowners, professionals, and enterprise builders.</h2></div>
+        <div class="price-grid">
+          <article class="price glass reveal"><h3>Free</h3><p>Basic floor plan designer, simple 3D view, limited projects.</p><strong>$0</strong></article>
+          <article class="price glass featured reveal"><h3>Homeowner</h3><p>Full design tools, cost estimates, material library, PDF/GLB exports.</p><strong>$29/mo</strong></article>
+          <article class="price glass reveal"><h3>Professional</h3><p>Unlimited projects, presentations, collaboration, and premium rendering.</p><strong>$99/mo</strong></article>
+        </div>
+      </section>
+
+      <section class="cta container reveal">
+        <p class="kicker">Build Before You Build</p>
+        <h2>Turn home construction into an interactive digital experience.</h2>
+        <p>Design, explore, estimate, and export your dream house before the first brick is placed.</p>
+        <a class="button primary" href="#top">Start exploring <span>↑</span></a>
+      </section>
+    </main>
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>
