@@ -1,0 +1,16 @@
+{
+  "name": "home-forge-ai",
+  "version": "1.0.0",
+  "description": "HomeForge AI — Build Before You Build",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev-server.mjs",
+    "build": "node scripts/build.mjs",
+    "start": "node scripts/serve-dist.mjs",
+    "check": "node scripts/check.mjs"
+  },
+  "keywords": ["home-design", "3d", "architecture", "ai", "visualization"],
+  "author": "",
+  "license": "MIT"
+}
