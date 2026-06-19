@@ -663,7 +663,6 @@ export function initWebGLPrototypeBuilder(state) {
   const mount = document.getElementById("prototypeWebGL");
   if (!mount || prototypeContext) return;
   const sceneElement = document.getElementById("prototypeScene");
-  sceneElement?.classList.add("webgl-active");
   prototypeContext = createThreeContext(mount, {
     controls: true,
     fov: 42,
@@ -671,6 +670,8 @@ export function initWebGLPrototypeBuilder(state) {
     cameraY: 5.2,
     cameraZ: 7.4
   });
+  sceneElement?.classList.add("webgl-active");
+  focusWebGLPrototypeView("exterior");
   updateWebGLPrototype(state);
   animateContext(prototypeContext);
 }
@@ -678,6 +679,20 @@ export function updateWebGLPrototype(state) {
   if (!prototypeContext) return;
   const nextModel = createHouseModel(state);
   setContextModel(prototypeContext, nextModel);
+}
+export function focusWebGLPrototypeView(view = "exterior") {
+  if (!prototypeContext) return;
+  const presets = {
+    exterior: { position: [6.8, 5.2, 7.4], target: [0, 0.75, 0] },
+    interior: { position: [3.2, 2.4, 4.2], target: [0, 1.0, 0] },
+    land: { position: [0, 8.8, 8.4], target: [0, 0, 0] }
+  };
+  const preset = presets[view] || presets.exterior;
+  prototypeContext.camera.position.set(...preset.position);
+  if (prototypeContext.controls) {
+    prototypeContext.controls.target.set(...preset.target);
+    prototypeContext.controls.update();
+  }
 }
 export async function exportPrototypeGLB() {
   if (!prototypeContext?.model) {

@@ -2,7 +2,8 @@ import {
   initHeroWebGL,
   initWebGLPrototypeBuilder,
   updateWebGLPrototype,
-  exportPrototypeGLB
+  exportPrototypeGLB,
+  focusWebGLPrototypeView
 } from "./three-builder.js";
 
 const state = {
@@ -436,6 +437,7 @@ function handleViewTabs() {
       const view = button.getAttribute("data-view") || "exterior";
       model.prototypeScene.dataset.view = view;
       setCameraPreset(view);
+      focusWebGLPrototypeView(view);
     });
   });
 }
@@ -476,7 +478,7 @@ function setCameraPreset(view) {
 }
 function setupPrototypeOrbit() {
   const scene = model.prototypeScene;
-  if (!scene) return;
+  if (!scene || scene.classList.contains("webgl-active")) return;
   applyPrototypeCamera();
   scene.addEventListener("pointerdown", (event) => {
     prototypeCamera.dragging = true;

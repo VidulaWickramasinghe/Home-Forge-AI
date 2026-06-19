@@ -27,11 +27,11 @@ const requiredCss = ['INSANE 3D RETOUCH', 'REAL WEBGL / THREE.JS UPGRADE', '.web
 const missingCss = requiredCss.filter((text) => !css.includes(text));
 if (missingCss.length) throw new Error(`Missing required CSS: ${missingCss.join(', ')}`);
 
-const requiredJs = ['setupPrototypeOrbit', 'setCameraPreset', 'applyPrototypeCamera', 'initHeroWebGL', 'initWebGLPrototypeBuilder', 'exportPrototypeGLB', 'localStorage', 'Blob'];
+const requiredJs = ['setupPrototypeOrbit', 'setCameraPreset', 'applyPrototypeCamera', 'initHeroWebGL', 'initWebGLPrototypeBuilder', 'exportPrototypeGLB', 'focusWebGLPrototypeView', 'localStorage', 'Blob'];
 const missingJs = requiredJs.filter((text) => !js.includes(text));
 if (missingJs.length) throw new Error(`Missing required app logic: ${missingJs.join(', ')}`);
 
-const requiredThreeBuilder = ['GLTFExporter', 'OrbitControls', 'WebGLRenderer', 'createHouseModel', 'exportPrototypeGLB'];
+const requiredThreeBuilder = ['GLTFExporter', 'OrbitControls', 'WebGLRenderer', 'createHouseModel', 'focusWebGLPrototypeView', 'exportPrototypeGLB'];
 const missingThreeBuilder = requiredThreeBuilder.filter((text) => !threeBuilderJs.includes(text));
 if (missingThreeBuilder.length) throw new Error(`Missing required Three.js builder logic: ${missingThreeBuilder.join(', ')}`);
 
