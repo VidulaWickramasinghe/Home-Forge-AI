@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="HomeForge advanced builder with rooms, wall drawing, live 3D preview, day/night lighting, save/load, and export." />
+    <title>HomeForge Advanced Builder</title>
+    <link rel="stylesheet" href="../styles.css" />
+    <link rel="stylesheet" href="./builder.css" />
+  </head>
+  <body class="builder-body">
+    <header class="builder-topbar glass-panel">
+      <a class="brand" href="/">
+        <span class="brand-mark" aria-hidden="true">
+          <svg class="brand-logo" viewBox="0 0 64 64" role="img">
+            <defs>
+              <linearGradient id="homeforgeLogoGradient" x1="10" y1="8" x2="54" y2="58" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stop-color="#67e8f9" />
+                <stop offset="0.54" stop-color="#38bdf8" />
+                <stop offset="1" stop-color="#fde68a" />
+              </linearGradient>
+            </defs>
+            <path class="logo-plate" d="M32 5 56 19v28L32 59 8 47V19L32 5Z" />
+            <path class="logo-roof" d="M18 32 32 18l14 14" />
+            <path class="logo-frame" d="M22 31v15h20V31" />
+            <path class="logo-spark" d="M32 27v19M24 38h16" />
+          </svg>
+        </span>
+        <span>HomeForge Advanced Builder</span>
+      </a>
+      <div class="topbar-actions">
+        <button id="undoAction" title="Undo last action">↶ Undo</button>
+        <button id="toggleFeatures">✓ Features</button>
+        <button id="toggleLighting">☀ Day</button>
+        <button id="saveProject">Save</button>
+        <button id="loadProject">Load</button>
+        <button id="exportProject" class="primary-action">Download JSON</button>
+      </div>
+    </header>
+
+    <main class="advanced-builder-shell">
+      <aside class="tools-panel glass-panel custom-scrollbar" aria-label="Design tools">
+        <p class="kicker">Builder Tools</p>
+        <h1>Interactive product workspace.</h1>
+        <div class="tool-stack" id="toolStack">
+          <button class="tool active" data-tool="Select">⌖ Select</button>
+          <button class="tool" data-tool="Wall">✎ Wall</button>
+          <button class="tool" data-tool="Door">▱ Door</button>
+          <button class="tool" data-tool="Window">▭ Window</button>
+          <button class="tool" data-tool="Room">▦ Room</button>
+          <button class="tool" data-tool="Material">◉ Material</button>
+        </div>
+
+        <section class="subtools" id="roomSubtools">
+          <h2>Room type</h2>
+          <button class="chip active" data-room="Living">Living</button>
+          <button class="chip" data-room="Kitchen">Kitchen</button>
+          <button class="chip" data-room="Bedroom">Bedroom</button>
+          <button class="chip" data-room="Bath">Bath</button>
+          <button class="chip" data-room="Office">Office</button>
+        </section>
+
+        <section class="subtools">
+          <h2>Material palette</h2>
+          <button class="swatch active" data-material="render"><span style="--swatch:#f8fafc"></span> White render</button>
+          <button class="swatch" data-material="brick"><span style="--swatch:#b45309"></span> Warm brick</button>
+          <button class="swatch" data-material="timber"><span style="--swatch:#a16207"></span> Timber</button>
+          <button class="swatch" data-material="concrete"><span style="--swatch:#94a3b8"></span> Concrete</button>
+        </section>
+
+        <button id="clearPlan" class="danger">Erase plan</button>
+        <p class="hint">Wall tool: click to start, move to preview, click again to continue. Room tool: drag a room rectangle. Right-click cancels drawing.</p>
+      </aside>
+
+      <section class="canvas-panel glass-panel" aria-label="2D floor plan editor">
+        <div class="workspace-heading">
+          <div>
+            <p class="kicker">2D Floor Plan</p>
+            <h2>Snap-to-grid editor with rooms, doors, windows, and walls.</h2>
+          </div>
+          <span id="activeToolLabel">Tool: Select</span>
+        </div>
+        <svg id="planCanvas" class="grid-bg-major" viewBox="0 0 820 620" role="img" aria-label="Advanced interactive floor plan canvas">
+          <defs>
+            <pattern id="smallGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(103,232,249,.10)" stroke-width="1" />
+            </pattern>
+            <pattern id="majorGrid" width="100" height="100" patternUnits="userSpaceOnUse">
+              <rect width="100" height="100" fill="url(#smallGrid)" />
+              <path d="M 100 0 L 0 0 0 100" fill="none" stroke="rgba(103,232,249,.26)" stroke-width="1.5" />
+            </pattern>
+          </defs>
+          <rect width="820" height="620" fill="url(#majorGrid)" />
+          <g id="roomsLayer"></g>
+          <g id="wallsLayer"></g>
+          <g id="featuresLayer"></g>
+          <g id="draftLayer"></g>
+        </svg>
+      </section>
+
+      <aside class="preview-panel glass-panel" aria-label="Live 3D preview and feature inspector">
+        <div class="preview-heading">
+          <div>
+            <p class="kicker">Live 3D Massing</p>
+            <h2 id="lightingLabel">Day preview</h2>
+          </div>
+          <span id="featureStatus">Features on</span>
+        </div>
+        <div class="three-lite-viewport" id="threeLiteViewport">
+          <div id="model3d" class="generated-model advanced-model"></div>
+        </div>
+        <section class="feature-list" id="featureList">
+          <h3>Builder capability checklist</h3>
+          <ul>
+            <li>Wall drawing system</li>
+            <li>Room creation and area calculation</li>
+            <li>2D to 3D generation</li>
+            <li>Materials panel</li>
+            <li>Cost panel</li>
+            <li>Save/load and JSON export</li>
+          </ul>
+        </section>
+      </aside>
+
+      <footer class="metrics-panel glass-panel" aria-label="Cost and measurement panel">
+        <article><span>Total floor area</span><strong id="floorArea">0 m²</strong></article>
+        <article><span>Total wall length</span><strong id="wallLength">0 m</strong></article>
+        <article><span>Construction estimate</span><strong id="estimatedCost">$0</strong></article>
+        <article><span>Assets</span><strong id="assetCount">0 rooms</strong></article>
+        <article><span>Status</span><strong id="saveStatus">Ready</strong></article>
+      </footer>
+    </main>
+
+    <script src="./builder.js" type="module"></script>
+  </body>
+</html>
