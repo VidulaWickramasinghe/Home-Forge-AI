@@ -42,7 +42,7 @@ function createThreeContext(mount, options = {}) {
     controls.enablePan = true;
     controls.minDistance = 4;
     controls.maxDistance = 16;
-    controls.maxPolarAngle = Math.PI / 2.05;
+    controls.maxPolarAngle = Math.PI / 1.15;
     controls.target.copy(cameraTarget);
     controls.update();
   }
@@ -110,6 +110,7 @@ function createMaterials(design) {
     pool: physical(0x22d3ee, { roughness: 0.02, transmission: 0.35, transparent: true, opacity: 0.78, emissive: 0x0891b2, emissiveIntensity: 0.28 }),
     timber: material(0x92400e, { roughness: 0.48 }), garage: material(0xf1f5f9, { roughness: 0.4 }), trim: material(0xffffff, { roughness: 0.28 }), solar: material(0x075985, { roughness: 0.18, metalness: 0.48, emissive: 0x0ea5e9, emissiveIntensity: 0.14 }),
     basement: material(0x312e81, { roughness: 0.55, emissive: 0x1e1b4b, emissiveIntensity: 0.15 }),
+    basementFloor: material(0x1e293b, { roughness: 0.62, emissive: 0x0f172a, emissiveIntensity: 0.12 }),
     basementGlass: physical(0x38bdf8, { roughness: 0.08, transmission: 0.18, transparent: true, opacity: 0.5, emissive: 0x0284c7, emissiveIntensity: 0.25 }),
     excavation: material(0x020617, { roughness: 0.85, emissive: 0x0f172a, emissiveIntensity: 0.2 }),
     partition: material(0xcbd5e1, { roughness: 0.52 }),
@@ -156,85 +157,143 @@ function addWindows(group, design, width, depth, floor, floorHeight, mats) {
 function createUndergroundReveal(design, width, depth, mats, options = {}) {
   const levels = Math.max(0, Math.min(Number(design.building?.basementLevels) || 0, 2));
   const group = new THREE.Group();
-  group.name = "Visible Underground Floor Reveal";
+  group.name = "Visible 3D Underground Floor Cutaway";
   if (!levels) return group;
 
   const levelHeight = options.compact ? 0.34 : 0.46;
-  const revealDepth = options.compact ? 0.16 : 0.22;
+  const wallThickness = options.compact ? 0.035 : 0.055;
   const { landDepth } = dims(design);
-  const frontZ = landDepth / 2 + revealDepth / 2 + 0.05;
-  const pitWidth = width * 0.92;
+  const basementWidth = width * 0.92;
+  const basementDepth = Math.max(depth * 0.68, options.compact ? 0.95 : 1.28);
+  const frontFaceZ = landDepth / 2 + 0.08;
+  const centerZ = frontFaceZ - basementDepth / 2;
+  const totalDepth = basementDepth + 0.3;
+  const totalHeight = levels * levelHeight + 0.18;
 
   group.add(box(
-    "Excavated Basement Opening",
-    pitWidth + 0.26,
-    0.035,
-    revealDepth + 0.18,
+    "Excavated 3D Basement Void",
+    basementWidth + 0.38,
+    0.045,
+    totalDepth,
     mats.excavation,
     0,
-    -0.025,
-    frontZ
+    -0.035,
+    centerZ
+  ));
+
+  group.add(box(
+    "Below Ground Rear Retaining Wall",
+    basementWidth + 0.22,
+    totalHeight,
+    wallThickness,
+    mats.garage,
+    0,
+    -totalHeight / 2,
+    centerZ - basementDepth / 2
+  ));
+  group.add(box(
+    "Below Ground Left Retaining Wall",
+    wallThickness,
+    totalHeight,
+    basementDepth,
+    mats.garage,
+    -basementWidth / 2 - wallThickness,
+    -totalHeight / 2,
+    centerZ
+  ));
+  group.add(box(
+    "Below Ground Right Retaining Wall",
+    wallThickness,
+    totalHeight,
+    basementDepth,
+    mats.garage,
+    basementWidth / 2 + wallThickness,
+    -totalHeight / 2,
+    centerZ
   ));
 
   for (let index = 0; index < levels; index += 1) {
-    const y = -levelHeight * (index + 0.5) - 0.04;
-    const level = box(
-      `Underground Floor ${index + 1}`,
-      pitWidth,
-      levelHeight * 0.86,
-      revealDepth,
+    const levelTopY = -index * levelHeight - 0.06;
+    const levelCenterY = levelTopY - levelHeight / 2;
+    const levelBottomY = levelTopY - levelHeight;
+
+    const roomVolume = box(
+      `Underground Floor ${index + 1} 3D Volume`,
+      basementWidth,
+      levelHeight * 0.78,
+      basementDepth,
       mats.basement,
       0,
-      y,
-      frontZ
+      levelCenterY,
+      centerZ
     );
-    const glazing = box(
-      `Underground Floor ${index + 1} Lightwell Glass`,
-      pitWidth * 0.22,
-      levelHeight * 0.34,
-      0.025,
-      mats.basementGlass,
-      -pitWidth * 0.25,
-      y + levelHeight * 0.08,
-      frontZ + revealDepth / 2 + 0.018
-    );
-    const secondGlazing = glazing.clone();
-    secondGlazing.name = `Underground Floor ${index + 1} Second Lightwell Glass`;
-    secondGlazing.position.x = pitWidth * 0.25;
+    roomVolume.material.transparent = true;
+    roomVolume.material.opacity = 0.86;
 
-    const slabLine = box(
-      `Underground Floor ${index + 1} Slab Edge`,
-      pitWidth + 0.1,
-      0.028,
-      revealDepth + 0.035,
+    const floorSlab = box(
+      `Underground Floor ${index + 1} Floor Slab`,
+      basementWidth + 0.16,
+      0.045,
+      basementDepth + 0.14,
+      mats.basementFloor,
+      0,
+      levelBottomY,
+      centerZ
+    );
+    const ceilingSlab = box(
+      `Underground Floor ${index + 1} Ceiling Slab`,
+      basementWidth + 0.16,
+      0.03,
+      basementDepth + 0.14,
       mats.trim,
       0,
-      y + levelHeight * 0.45,
-      frontZ
+      levelTopY,
+      centerZ
     );
-    group.add(level, glazing, secondGlazing, slabLine);
-  }
 
-  group.add(box(
-    "Basement Retaining Wall Left",
-    0.06,
-    levelHeight * levels + 0.12,
-    revealDepth + 0.12,
-    mats.garage,
-    -pitWidth / 2 - 0.06,
-    -(levelHeight * levels) / 2 - 0.04,
-    frontZ
-  ));
-  group.add(box(
-    "Basement Retaining Wall Right",
-    0.06,
-    levelHeight * levels + 0.12,
-    revealDepth + 0.12,
-    mats.garage,
-    pitWidth / 2 + 0.06,
-    -(levelHeight * levels) / 2 - 0.04,
-    frontZ
-  ));
+    const frontGlass = box(
+      `Underground Floor ${index + 1} Front Lightwell Wall`,
+      basementWidth * 0.7,
+      levelHeight * 0.48,
+      0.025,
+      mats.basementGlass,
+      0,
+      levelCenterY + levelHeight * 0.08,
+      frontFaceZ + 0.018
+    );
+
+    const crossBeam = box(
+      `Underground Floor ${index + 1} Z Axis Beam`,
+      wallThickness,
+      wallThickness,
+      basementDepth,
+      mats.trim,
+      0,
+      levelTopY - levelHeight * 0.42,
+      centerZ
+    );
+
+    const columnY = levelCenterY;
+    const columnHeight = levelHeight * 0.78;
+    const columnPositions = [
+      [-basementWidth * 0.42, centerZ - basementDepth * 0.34],
+      [basementWidth * 0.42, centerZ - basementDepth * 0.34],
+      [-basementWidth * 0.42, centerZ + basementDepth * 0.34],
+      [basementWidth * 0.42, centerZ + basementDepth * 0.34]
+    ];
+    const columns = columnPositions.map(([x, z], columnIndex) => box(
+      `Underground Floor ${index + 1} Structural Column ${columnIndex + 1}`,
+      wallThickness * 1.45,
+      columnHeight,
+      wallThickness * 1.45,
+      mats.trim,
+      x,
+      columnY,
+      z
+    ));
+
+    group.add(roomVolume, floorSlab, ceilingSlab, frontGlass, crossBeam, ...columns);
+  }
 
   return group;
 }
