@@ -1,0 +1,476 @@
+@import "tailwindcss";
+
+:root {
+  --background: #020617;
+  --foreground: #ffffff;
+  --cyan: #67e8f9;
+  --gold: #fde68a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+a {
+  text-decoration: none;
+}
+
+.hero-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 52px 52px;
+  mask-image: radial-gradient(circle at center, black 0%, transparent 72%);
+}
+
+.text-gradient {
+  background: linear-gradient(90deg, #67e8f9, #ffffff, #fde68a);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.section-label {
+  margin-bottom: 0.9rem;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #67e8f9;
+}
+
+.section-title {
+  font-size: clamp(2.25rem, 5vw, 4rem);
+  line-height: 1.05;
+  font-weight: 950;
+  letter-spacing: -0.04em;
+}
+
+.section-text {
+  margin-top: 1.25rem;
+  max-width: 48rem;
+  font-size: 1.05rem;
+  line-height: 1.9;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.feature-card {
+  min-height: 15rem;
+  border-radius: 1.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.055);
+  padding: 1.55rem;
+  backdrop-filter: blur(18px);
+  transition:
+    transform 220ms ease,
+    border-color 220ms ease,
+    background 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-8px);
+  border-color: rgba(103, 232, 249, 0.45);
+  background: rgba(255, 255, 255, 0.085);
+  box-shadow: 0 22px 70px rgba(8, 145, 178, 0.12);
+}
+
+.workflow-card {
+  min-height: 8.5rem;
+  border-radius: 1.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(2, 6, 23, 0.35);
+  padding: 1.25rem;
+  transition:
+    transform 220ms ease,
+    border-color 220ms ease;
+}
+
+.workflow-card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(253, 230, 138, 0.35);
+}
+
+.ai-output {
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.055);
+  padding: 1rem;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+/* CSS 3D House Model */
+
+.house-stage {
+  position: relative;
+  height: 430px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  perspective: 1000px;
+  background:
+    radial-gradient(circle at center, rgba(103, 232, 249, 0.16), transparent 45%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent);
+}
+
+.house-world {
+  position: relative;
+  width: 280px;
+  height: 250px;
+  transform-style: preserve-3d;
+  animation: rotateWorld 14s linear infinite;
+}
+
+.ground {
+  position: absolute;
+  left: -80px;
+  top: 160px;
+  width: 430px;
+  height: 260px;
+  border-radius: 2rem;
+  background:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.85)),
+    repeating-linear-gradient(
+      45deg,
+      rgba(103, 232, 249, 0.1) 0 2px,
+      transparent 2px 20px
+    );
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transform: rotateX(82deg) translateZ(-70px);
+  box-shadow: 0 35px 80px rgba(0, 0, 0, 0.45);
+}
+
+.house-body {
+  position: absolute;
+  left: 45px;
+  top: 70px;
+  width: 190px;
+  height: 130px;
+  transform-style: preserve-3d;
+}
+
+.house-face {
+  position: absolute;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: linear-gradient(135deg, #e5e7eb, #94a3b8);
+  box-shadow: inset 0 0 40px rgba(255, 255, 255, 0.12);
+}
+
+.front {
+  width: 190px;
+  height: 130px;
+  transform: translateZ(80px);
+}
+
+.back {
+  width: 190px;
+  height: 130px;
+  transform: rotateY(180deg) translateZ(80px);
+  background: linear-gradient(135deg, #cbd5e1, #64748b);
+}
+
+.left {
+  width: 160px;
+  height: 130px;
+  transform: rotateY(-90deg) translateZ(80px);
+  background: linear-gradient(135deg, #cbd5e1, #64748b);
+}
+
+.right {
+  width: 160px;
+  height: 130px;
+  transform: rotateY(90deg) translateZ(110px);
+  background: linear-gradient(135deg, #f8fafc, #94a3b8);
+}
+
+.roof-one {
+  width: 205px;
+  height: 115px;
+  background: linear-gradient(135deg, #111827, #020617);
+  transform: rotateX(52deg) translateY(-75px) translateZ(42px);
+  transform-origin: top;
+  border-color: rgba(103, 232, 249, 0.22);
+}
+
+.roof-two {
+  width: 205px;
+  height: 115px;
+  background: linear-gradient(135deg, #0f172a, #020617);
+  transform: rotateX(-52deg) translateY(-5px) translateZ(-38px);
+  transform-origin: bottom;
+  border-color: rgba(253, 230, 138, 0.18);
+}
+
+.window {
+  position: absolute;
+  border-radius: 0.5rem;
+  background:
+    linear-gradient(135deg, rgba(103, 232, 249, 0.95), rgba(14, 165, 233, 0.65)),
+    linear-gradient(90deg, transparent 48%, rgba(255, 255, 255, 0.8) 50%, transparent 52%);
+  border: 2px solid rgba(255, 255, 255, 0.65);
+  box-shadow: 0 0 30px rgba(103, 232, 249, 0.5);
+}
+
+.wide {
+  left: 68px;
+  top: 42px;
+  width: 72px;
+  height: 42px;
+}
+
+.small {
+  right: 18px;
+  top: 42px;
+  width: 32px;
+  height: 42px;
+}
+
+.side-window {
+  left: 45px;
+  top: 43px;
+  width: 70px;
+  height: 42px;
+}
+
+.door {
+  position: absolute;
+  left: 18px;
+  bottom: 0;
+  width: 38px;
+  height: 78px;
+  border-radius: 0.6rem 0.6rem 0 0;
+  background: linear-gradient(135deg, #92400e, #451a03);
+  border: 2px solid rgba(253, 230, 138, 0.4);
+}
+
+.door::after {
+  content: "";
+  position: absolute;
+  right: 8px;
+  top: 38px;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: #fde68a;
+}
+
+.pool {
+  position: absolute;
+  left: 205px;
+  top: 207px;
+  width: 95px;
+  height: 55px;
+  border-radius: 1.2rem;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.55), transparent 18%),
+    linear-gradient(135deg, #67e8f9, #0284c7);
+  border: 4px solid rgba(255, 255, 255, 0.25);
+  transform: rotateX(75deg) translateZ(20px);
+  box-shadow: 0 0 35px rgba(103, 232, 249, 0.4);
+}
+
+.tree {
+  position: absolute;
+  width: 38px;
+  height: 70px;
+  transform-style: preserve-3d;
+}
+
+.tree::before {
+  content: "";
+  position: absolute;
+  left: 15px;
+  top: 35px;
+  width: 8px;
+  height: 35px;
+  border-radius: 999px;
+  background: #78350f;
+}
+
+.tree::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 38px;
+  height: 42px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 30% 30%, #86efac, #166534);
+  box-shadow: 0 0 25px rgba(34, 197, 94, 0.25);
+}
+
+.tree-one {
+  left: -20px;
+  top: 150px;
+}
+
+.tree-two {
+  right: -45px;
+  top: 145px;
+}
+
+/* Builder Preview */
+
+.builder-shell {
+  display: grid;
+  grid-template-columns: 150px 1fr 170px;
+  gap: 1rem;
+  min-height: 420px;
+}
+
+.builder-panel {
+  border-radius: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(2, 6, 23, 0.5);
+  padding: 1rem;
+}
+
+.tool-row {
+  margin-bottom: 0.65rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.plan-area {
+  position: relative;
+  min-height: 420px;
+  border-radius: 1.5rem;
+  overflow: hidden;
+  border: 1px solid rgba(103, 232, 249, 0.18);
+  background-color: rgba(2, 6, 23, 0.45);
+  background-image:
+    linear-gradient(rgba(103, 232, 249, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(103, 232, 249, 0.09) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.room {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  border: 3px solid rgba(255, 255, 255, 0.75);
+  background: rgba(103, 232, 249, 0.08);
+  font-size: 0.8rem;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.room-living {
+  left: 38px;
+  top: 45px;
+  width: 210px;
+  height: 160px;
+}
+
+.room-kitchen {
+  left: 248px;
+  top: 45px;
+  width: 145px;
+  height: 160px;
+}
+
+.room-bedroom {
+  left: 38px;
+  top: 205px;
+  width: 190px;
+  height: 150px;
+}
+
+.room-bath {
+  left: 228px;
+  top: 205px;
+  width: 165px;
+  height: 150px;
+}
+
+.metric-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.8rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 0.8rem;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.metric-row strong {
+  color: white;
+}
+
+@keyframes rotateWorld {
+  0% {
+    transform: rotateX(58deg) rotateZ(0deg);
+  }
+  100% {
+    transform: rotateX(58deg) rotateZ(360deg);
+  }
+}
+
+@media (max-width: 1024px) {
+  .builder-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .builder-panel {
+    min-height: auto;
+  }
+
+  .plan-area {
+    min-height: 360px;
+  }
+}
+
+@media (max-width: 640px) {
+  .house-stage {
+    height: 360px;
+  }
+
+  .house-world {
+    transform: scale(0.82);
+  }
+
+  .room-living {
+    left: 24px;
+    top: 45px;
+    width: 150px;
+    height: 130px;
+  }
+
+  .room-kitchen {
+    left: 174px;
+    top: 45px;
+    width: 110px;
+    height: 130px;
+  }
+
+  .room-bedroom {
+    left: 24px;
+    top: 175px;
+    width: 140px;
+    height: 120px;
+  }
+
+  .room-bath {
+    left: 164px;
+    top: 175px;
+    width: 120px;
+    height: 120px;
+  }
+}
