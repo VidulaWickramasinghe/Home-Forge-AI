@@ -445,7 +445,7 @@ document.querySelector('#loadProject').addEventListener('click', () => {
 
 document.querySelector('#exportProject').addEventListener('click', () => {
   const payload = {
-    app: 'HomeForge AI Advanced Builder',
+    app: 'HomeForge Advanced Builder',
     unitScale: '20px = 1m',
     exportedAt: new Date().toISOString(),
     walls: state.walls,

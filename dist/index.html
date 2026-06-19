@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>HomeForge AI | Dream House Prototype Builder</title>
+    <title>HomeForge | Dream House Prototype Builder</title>
     <meta
       name="description"
       content="Create a 3D prototype of your dream house with land, rooms, roof, garage, colours, features, furnishings and AI concept generation."
@@ -12,10 +12,24 @@
   </head>
   <body>
     <header class="site-header">
-      <a class="brand" href="#home" aria-label="HomeForge AI home">
-        <span class="brand-mark">⌂</span>
+      <a class="brand" href="#home" aria-label="HomeForge home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg class="brand-logo" viewBox="0 0 64 64" role="img">
+            <defs>
+              <linearGradient id="homeforgeLogoGradient" x1="10" y1="8" x2="54" y2="58" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stop-color="#67e8f9" />
+                <stop offset="0.54" stop-color="#38bdf8" />
+                <stop offset="1" stop-color="#fde68a" />
+              </linearGradient>
+            </defs>
+            <path class="logo-plate" d="M32 5 56 19v28L32 59 8 47V19L32 5Z" />
+            <path class="logo-roof" d="M18 32 32 18l14 14" />
+            <path class="logo-frame" d="M22 31v15h20V31" />
+            <path class="logo-spark" d="M32 27v19M24 38h16" />
+          </svg>
+        </span>
         <span>
-          <strong>HomeForge AI</strong>
+          <strong>HomeForge</strong>
           <small>Build before you build</small>
         </span>
       </a>
@@ -39,7 +53,7 @@
             before meeting a contractor.
           </h1>
           <p class="hero-copy">
-            HomeForge AI helps future homeowners create land, customise house
+            HomeForge helps future homeowners create land, customise house
             shape, stories, garage, roof, windows, doors, colours, rooms,
             modern features, furnishings and cost direction — then present the
             prototype idea to builders and house plan designers.
@@ -70,6 +84,12 @@
           </div>
           <div class="mini-scene webgl-hero-scene">
             <div id="heroWebGL" class="webgl-hero-mount"></div>
+            <div class="mobile-static-preview hero-static-preview" aria-hidden="true">
+              <span class="static-land"></span>
+              <span class="static-house"></span>
+              <span class="static-roof"></span>
+              <span class="static-pool"></span>
+            </div>
           </div>
           <div class="preview-metrics">
             <span>Land + House</span>
@@ -229,6 +249,18 @@
                 <input id="smartHome" type="checkbox" />
                 <span>Smart home system</span>
               </label>
+              <label class="switch-row">
+                <input id="cctvCameras" type="checkbox" checked />
+                <span>CCTV camera coverage</span>
+              </label>
+              <label class="switch-row">
+                <input id="fence" type="checkbox" checked />
+                <span>Fence around land</span>
+              </label>
+              <label class="switch-row">
+                <input id="frontGate" type="checkbox" checked />
+                <span>Front driveway gate</span>
+              </label>
             </div>
             <div class="control-group">
               <h3>Interior</h3>
@@ -251,6 +283,30 @@
                   <option value="premium">Premium</option>
                 </select>
               </label>
+              <label class="switch-row">
+                <input id="officeRoom" type="checkbox" checked />
+                <span>Office room</span>
+              </label>
+              <label class="switch-row">
+                <input id="babyRoom" type="checkbox" />
+                <span>Baby / nursery room</span>
+              </label>
+              <label class="switch-row">
+                <input id="laundryRoom" type="checkbox" checked />
+                <span>Laundry room</span>
+              </label>
+              <label class="switch-row">
+                <input id="miniGym" type="checkbox" />
+                <span>Mini gym</span>
+              </label>
+              <label class="switch-row">
+                <input id="miniBar" type="checkbox" />
+                <span>Mini bar</span>
+              </label>
+              <label class="switch-row">
+                <input id="fishTank" type="checkbox" checked />
+                <span>Fish tank / aquarium</span>
+              </label>
             </div>
           </aside>
           <section class="prototype-window" aria-label="3D prototype window">
@@ -267,6 +323,14 @@
             </div>
             <div class="prototype-scene immersive-prototype-scene" id="prototypeScene">
               <div id="prototypeWebGL" class="webgl-prototype-mount"></div>
+              <div class="mobile-static-preview prototype-static-preview" aria-hidden="true">
+                <span class="static-land"></span>
+                <span class="static-house"></span>
+                <span class="static-roof"></span>
+                <span class="static-garage"></span>
+                <span class="static-pool"></span>
+                <strong>Mobile prototype preview</strong>
+              </div>
               <div class="scene-vignette"></div>
               <div class="sun-orb"></div>
               <div class="orbit-help">
@@ -452,7 +516,7 @@
       </section>
     </main>
     <footer class="site-footer">
-      <p>© 2026 HomeForge AI. Dream house prototype builder.</p>
+      <p>© 2026 HomeForge. Dream house prototype builder.</p>
       <p>
         Concept design only. Final construction must be reviewed by qualified
         professionals.
