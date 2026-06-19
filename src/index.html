@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HomeForge AI | Dream House Prototype Builder</title>
+    <meta
+      name="description"
+      content="Create a 3D prototype of your dream house with land, rooms, roof, garage, colours, features, furnishings and AI concept generation."
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#home" aria-label="HomeForge AI home">
+        <span class="brand-mark">⌂</span>
+        <span>
+          <strong>HomeForge AI</strong>
+          <small>Build before you build</small>
+        </span>
+      </a>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="#builder">Prototype Builder</a>
+        <a href="#ai">AI Prototype</a>
+        <a href="#contractor">Contractor Brief</a>
+        <a href="#purpose">Purpose</a>
+      </nav>
+      <a class="nav-button" href="#builder">Start Prototype</a>
+    </header>
+    <main>
+      <section id="home" class="hero-section">
+        <div class="hero-glow hero-glow-one"></div>
+        <div class="hero-glow hero-glow-two"></div>
+        <div class="hero-content">
+          <p class="eyebrow">3D Dream House Prototype Studio</p>
+          <h1>
+            Create your dream house idea as a
+            <span>simple 3D prototype</span>
+            before meeting a contractor.
+          </h1>
+          <p class="hero-copy">
+            HomeForge AI helps future homeowners create land, customise house
+            shape, stories, garage, roof, windows, doors, colours, rooms,
+            modern features, furnishings and cost direction — then present the
+            prototype idea to builders and house plan designers.
+          </p>
+          <div class="hero-actions">
+            <a class="primary-button" href="#builder">Open Builder Studio</a>
+            <a class="secondary-button" href="#ai">Generate With AI</a>
+          </div>
+          <div class="hero-stats">
+            <article>
+              <strong id="statLand">600 m²</strong>
+              <span>Land Area</span>
+            </article>
+            <article>
+              <strong id="statStories">2</strong>
+              <span>Stories</span>
+            </article>
+            <article>
+              <strong id="statCost">$420k</strong>
+              <span>Prototype Estimate</span>
+            </article>
+          </div>
+        </div>
+        <div class="hero-preview" aria-label="3D house preview">
+          <div class="preview-topbar">
+            <span>Live Prototype Preview</span>
+            <strong>Interactive Concept</strong>
+          </div>
+          <div class="mini-scene">
+            <div class="mini-land">
+              <div class="mini-house">
+                <div class="mini-roof"></div>
+                <div class="mini-body">
+                  <span class="mini-window mini-window-one"></span>
+                  <span class="mini-window mini-window-two"></span>
+                  <span class="mini-door"></span>
+                </div>
+              </div>
+              <div class="mini-garage"></div>
+              <div class="mini-pool"></div>
+              <div class="mini-tree mini-tree-one"></div>
+              <div class="mini-tree mini-tree-two"></div>
+            </div>
+          </div>
+          <div class="preview-metrics">
+            <span>Land + House</span>
+            <span>Rooms + Materials</span>
+            <span>Builder Brief</span>
+          </div>
+        </div>
+      </section>
+      <section id="builder" class="builder-section">
+        <div class="builder-header">
+          <div>
+            <p class="eyebrow">Full Window Customisable Space</p>
+            <h2>Dream House Prototype Builder</h2>
+            <p>
+              Change the land, building shape, stories, underground floors,
+              garage, roof, windows, doors, colours, features and interior
+              style. This creates a practical 3D prototype idea for contractors.
+            </p>
+          </div>
+          <div class="builder-header-actions">
+            <button class="ghost-button" id="resetDesignBtn" type="button">
+              Reset
+            </button>
+            <button class="ghost-button" id="saveDesignBtn" type="button">
+              Save
+            </button>
+            <button class="primary-button small" id="exportDesignBtn" type="button">
+              Export JSON
+            </button>
+          </div>
+        </div>
+        <div class="studio-shell">
+          <aside class="control-panel" aria-label="House customisation controls">
+            <div class="panel-title">
+              <strong>Customise Prototype</strong>
+              <span>Every change updates the model</span>
+            </div>
+            <div class="control-group">
+              <h3>Land</h3>
+              <label>
+                Land Area
+                <select id="landArea">
+                  <option value="300">300 m² compact block</option>
+                  <option value="450">450 m² suburban block</option>
+                  <option value="600" selected>600 m² family block</option>
+                  <option value="800">800 m² large block</option>
+                  <option value="1000">1000 m² premium block</option>
+                </select>
+              </label>
+              <label>
+                Land Shape
+                <select id="landShape">
+                  <option value="rectangular" selected>Rectangular</option>
+                  <option value="wide">Wide frontage</option>
+                  <option value="narrow">Narrow block</option>
+                  <option value="corner">Corner block</option>
+                </select>
+              </label>
+              <label class="switch-row">
+                <input id="includeGarden" type="checkbox" checked />
+                <span>Garden / landscape area</span>
+              </label>
+              <label class="switch-row">
+                <input id="includePool" type="checkbox" checked />
+                <span>Swimming pool</span>
+              </label>
+            </div>
+            <div class="control-group">
+              <h3>House Structure</h3>
+              <label>
+                House Stories
+                <input id="stories" type="range" min="1" max="4" value="2" />
+                <span class="range-value" id="storiesValue">2 stories</span>
+              </label>
+              <label>
+                Underground Floors
+                <input id="basement" type="range" min="0" max="2" value="0" />
+                <span class="range-value" id="basementValue">0 underground</span>
+              </label>
+              <label>
+                House Shape
+                <select id="houseShape">
+                  <option value="modern-box" selected>Modern box</option>
+                  <option value="l-shape">L-shape</option>
+                  <option value="wide-villa">Wide villa</option>
+                  <option value="compact">Compact home</option>
+                  <option value="luxury-wing">Luxury wing layout</option>
+                </select>
+              </label>
+              <label>
+                Garage
+                <select id="garage">
+                  <option value="none">No garage</option>
+                  <option value="single">Single garage</option>
+                  <option value="double" selected>Double garage</option>
+                  <option value="triple">Triple garage</option>
+                </select>
+              </label>
+            </div>
+            <div class="control-group">
+              <h3>Exterior Design</h3>
+              <label>
+                Roof Style
+                <select id="roofStyle">
+                  <option value="flat">Flat modern roof</option>
+                  <option value="gable" selected>Gable roof</option>
+                  <option value="hip">Hip roof</option>
+                  <option value="skillion">Skillion roof</option>
+                  <option value="mixed">Mixed architectural roof</option>
+                </select>
+              </label>
+              <label>
+                House Colour
+                <input id="houseColor" type="color" value="#e5e7eb" />
+              </label>
+              <label>
+                Roof Colour
+                <input id="roofColor" type="color" value="#111827" />
+              </label>
+              <label>
+                Window Style
+                <select id="windowStyle">
+                  <option value="standard">Standard windows</option>
+                  <option value="wide" selected>Wide glass windows</option>
+                  <option value="full-glass">Full height glass</option>
+                  <option value="arched">Arched feature windows</option>
+                </select>
+              </label>
+              <label>
+                Door Style
+                <select id="doorStyle">
+                  <option value="timber" selected>Timber feature door</option>
+                  <option value="glass">Glass entry door</option>
+                  <option value="black">Black modern door</option>
+                  <option value="wide">Wide double door</option>
+                </select>
+              </label>
+            </div>
+            <div class="control-group">
+              <h3>Modern Features</h3>
+              <label class="switch-row">
+                <input id="solarPanels" type="checkbox" checked />
+                <span>Solar panels</span>
+              </label>
+              <label class="switch-row">
+                <input id="balcony" type="checkbox" checked />
+                <span>Balcony</span>
+              </label>
+              <label class="switch-row">
+                <input id="outdoorArea" type="checkbox" checked />
+                <span>Outdoor entertainment area</span>
+              </label>
+              <label class="switch-row">
+                <input id="smartHome" type="checkbox" />
+                <span>Smart home system</span>
+              </label>
+            </div>
+            <div class="control-group">
+              <h3>Interior</h3>
+              <label>
+                Bedrooms
+                <input id="bedrooms" type="range" min="1" max="7" value="4" />
+                <span class="range-value" id="bedroomsValue">4 bedrooms</span>
+              </label>
+              <label>
+                Bathrooms
+                <input id="bathrooms" type="range" min="1" max="5" value="3" />
+                <span class="range-value" id="bathroomsValue">3 bathrooms</span>
+              </label>
+              <label>
+                Furnishing Style
+                <select id="furnishing">
+                  <option value="minimal">Minimal</option>
+                  <option value="modern" selected>Modern</option>
+                  <option value="warm">Warm family</option>
+                  <option value="premium">Premium</option>
+                </select>
+              </label>
+            </div>
+          </aside>
+          <section class="prototype-window" aria-label="3D prototype window">
+            <div class="prototype-toolbar">
+              <div>
+                <strong>3D Prototype Window</strong>
+                <span id="prototypeLabel">Modern 2-storey family house</span>
+              </div>
+              <div class="view-tabs">
+                <button class="active" type="button" data-view="exterior">Exterior</button>
+                <button type="button" data-view="interior">Interior</button>
+                <button type="button" data-view="land">Land</button>
+              </div>
+            </div>
+            <div class="prototype-scene" id="prototypeScene">
+              <div class="sun-orb"></div>
+              <div class="land-model" id="landModel">
+                <div class="driveway-model"></div>
+                <div class="garden-model" id="gardenModel"></div>
+                <div class="pool-model" id="poolModel"></div>
+                <div class="house-model" id="houseModel">
+                  <div class="roof-model" id="roofModel">
+                    <span class="solar-panel solar-one" id="solarOne"></span>
+                    <span class="solar-panel solar-two" id="solarTwo"></span>
+                  </div>
+                  <div class="upper-floor" id="upperFloor">
+                    <span class="balcony-model" id="balconyModel"></span>
+                    <span class="window-model upper-window-one"></span>
+                    <span class="window-model upper-window-two"></span>
+                    <span class="window-model upper-window-three"></span>
+                  </div>
+                  <div class="main-floor">
+                    <span class="door-model" id="doorModel"></span>
+                    <span class="window-model window-one"></span>
+                    <span class="window-model window-two"></span>
+                    <span class="window-model window-three"></span>
+                    <span class="garage-model" id="garageModel"></span>
+                  </div>
+                  <div class="basement-model" id="basementModel">
+                    <span>Underground Level</span>
+                  </div>
+                </div>
+                <div class="outdoor-model" id="outdoorModel">
+                  Outdoor Area
+                </div>
+              </div>
+            </div>
+            <div class="prototype-bottom">
+              <article>
+                <span>Total Area</span>
+                <strong id="totalAreaOut">246 m²</strong>
+              </article>
+              <article>
+                <span>Rooms</span>
+                <strong id="roomsOut">4 Bed / 3 Bath</strong>
+              </article>
+              <article>
+                <span>Garage</span>
+                <strong id="garageOut">Double</strong>
+              </article>
+              <article>
+                <span>Estimate</span>
+                <strong id="costOut">$420,000</strong>
+              </article>
+            </div>
+          </section>
+          <aside class="summary-panel" aria-label="Design summary">
+            <div class="panel-title">
+              <strong>Prototype Summary</strong>
+              <span>For homeowner and contractor</span>
+            </div>
+            <div class="summary-card highlight">
+              <span>Estimated Direction</span>
+              <strong id="summaryCost">$420,000</strong>
+              <small>Concept estimate only</small>
+            </div>
+            <div class="summary-list" id="summaryList"></div>
+            <div class="contractor-note">
+              <strong>Purpose</strong>
+              <p>
+                This prototype gives contractors a clear visual idea. A licensed
+                house plan designer, builder or engineer can then convert it
+                into detailed construction drawings.
+              </p>
+            </div>
+          </aside>
+        </div>
+      </section>
+      <section id="ai" class="ai-section">
+        <div class="section-heading">
+          <p class="eyebrow">AI Prototype Generator</p>
+          <h2>Upload inspiration photos and describe your dream house.</h2>
+          <p>
+            This prototype version prepares the AI workflow. Users can upload
+            dream home photos and write their idea. The system can convert the
+            description into a custom 3D prototype direction.
+          </p>
+        </div>
+        <div class="ai-grid">
+          <div class="ai-card">
+            <label class="upload-box">
+              <input id="photoUpload" type="file" accept="image/*" multiple />
+              <span>📸</span>
+              <strong>Upload dream home photos</strong>
+              <small>Facade, interior, roof, kitchen, garden or pool ideas</small>
+            </label>
+            <div class="photo-preview" id="photoPreview"></div>
+          </div>
+          <div class="ai-card">
+            <label>
+              Describe your idea
+              <textarea
+                id="ideaPrompt"
+                rows="9"
+                placeholder="Example: I want a modern 600 m² house with 4 bedrooms, 3 bathrooms, double garage, pool, balcony, solar panels, open kitchen, and warm interior design."
+              ></textarea>
+            </label>
+            <button class="primary-button full" id="generateAiBtn" type="button">
+              Generate Prototype Direction
+            </button>
+          </div>
+          <div class="ai-card ai-result">
+            <strong>AI Concept Output</strong>
+            <div id="aiOutput">
+              Upload photos or describe your idea, then generate a prototype
+              direction.
+            </div>
+          </div>
+        </div>
+      </section>
+      <section id="contractor" class="contractor-section">
+        <div class="section-heading">
+          <p class="eyebrow">Builder Communication</p>
+          <h2>Contractor-ready prototype brief.</h2>
+          <p>
+            The user can share this simple design brief with contractors, home
+            designers or architects. It does not replace professional plans, but
+            it clearly explains the homeowner’s dream concept.
+          </p>
+        </div>
+        <div class="brief-box">
+          <div class="brief-top">
+            <strong>Dream House Prototype Brief</strong>
+            <button class="secondary-button small" id="copyBriefBtn" type="button">
+              Copy Brief
+            </button>
+          </div>
+          <pre id="briefOutput"></pre>
+        </div>
+      </section>
+      <section id="purpose" class="purpose-section">
+        <div>
+          <p class="eyebrow">Main Purpose</p>
+          <h2>Minimum-cost idea creation before complex planning.</h2>
+        </div>
+        <div class="purpose-grid">
+          <article>
+            <span>01</span>
+            <h3>Create the idea</h3>
+            <p>
+              Future homeowners can build their dream house idea visually before
+              spending money on professional drawings.
+            </p>
+          </article>
+          <article>
+            <span>02</span>
+            <h3>Prototype the house</h3>
+            <p>
+              The website creates a first-rate 3D prototype with land, house
+              shape, rooms, roof, exterior and interior direction.
+            </p>
+          </article>
+          <article>
+            <span>03</span>
+            <h3>Present to contractors</h3>
+            <p>
+              The prototype is shared with contractors so they understand the
+              design direction before preparing detailed plans.
+            </p>
+          </article>
+          <article>
+            <span>04</span>
+            <h3>Convert to real plan</h3>
+            <p>
+              Builders, architects and engineers transform the prototype into
+              compliant construction drawings and accurate quotes.
+            </p>
+          </article>
+        </div>
+      </section>
+    </main>
+    <footer class="site-footer">
+      <p>© 2026 HomeForge AI. Dream house prototype builder.</p>
+      <p>
+        Concept design only. Final construction must be reviewed by qualified
+        professionals.
+      </p>
+    </footer>
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>
