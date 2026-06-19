@@ -23,9 +23,6 @@ jobs:
       run:
         working-directory: house-arch-ai
 
-    env:
-      GITHUB_PAGES: true
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -44,12 +41,12 @@ jobs:
         run: npm run build
 
       - name: Add nojekyll file
-        run: touch out/.nojekyll
+        run: touch dist/.nojekyll
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: house-arch-ai/out
+          path: house-arch-ai/dist
 
   deploy:
     environment:
