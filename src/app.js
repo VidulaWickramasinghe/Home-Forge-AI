@@ -425,9 +425,89 @@ function handleViewTabs() {
     button.addEventListener("click", () => {
       buttons.forEach((btn) => btn.classList.remove("active"));
       button.classList.add("active");
-      const view = button.getAttribute("data-view");
-      model.prototypeScene.dataset.view = view || "exterior";
+      const view = button.getAttribute("data-view") || "exterior";
+      model.prototypeScene.dataset.view = view;
+      setCameraPreset(view);
     });
+  });
+}
+const prototypeCamera = {
+  rx: 58,
+  rz: -36,
+  zoom: 1,
+  dragging: false,
+  startX: 0,
+  startY: 0,
+  startRx: 58,
+  startRz: -36
+};
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+function applyPrototypeCamera() {
+  if (!model.prototypeScene) return;
+  model.prototypeScene.style.setProperty("--orbit-x", `${prototypeCamera.rx}deg`);
+  model.prototypeScene.style.setProperty("--orbit-z", `${prototypeCamera.rz}deg`);
+  model.prototypeScene.style.setProperty("--scene-zoom", String(prototypeCamera.zoom));
+}
+function setCameraPreset(view) {
+  if (view === "interior") {
+    prototypeCamera.rx = 62;
+    prototypeCamera.rz = -18;
+    prototypeCamera.zoom = 1.18;
+  } else if (view === "land") {
+    prototypeCamera.rx = 70;
+    prototypeCamera.rz = -45;
+    prototypeCamera.zoom = 0.82;
+  } else {
+    prototypeCamera.rx = 58;
+    prototypeCamera.rz = -36;
+    prototypeCamera.zoom = 1;
+  }
+  applyPrototypeCamera();
+}
+function setupPrototypeOrbit() {
+  const scene = model.prototypeScene;
+  if (!scene) return;
+  applyPrototypeCamera();
+  scene.addEventListener("pointerdown", (event) => {
+    prototypeCamera.dragging = true;
+    prototypeCamera.startX = event.clientX;
+    prototypeCamera.startY = event.clientY;
+    prototypeCamera.startRx = prototypeCamera.rx;
+    prototypeCamera.startRz = prototypeCamera.rz;
+    scene.classList.add("is-dragging");
+    scene.setPointerCapture(event.pointerId);
+  });
+  scene.addEventListener("pointermove", (event) => {
+    if (!prototypeCamera.dragging) return;
+    const deltaX = event.clientX - prototypeCamera.startX;
+    const deltaY = event.clientY - prototypeCamera.startY;
+    prototypeCamera.rz = prototypeCamera.startRz + deltaX * 0.28;
+    prototypeCamera.rx = clamp(prototypeCamera.startRx - deltaY * 0.18, 35, 78);
+    applyPrototypeCamera();
+  });
+  scene.addEventListener("pointerup", () => {
+    prototypeCamera.dragging = false;
+    scene.classList.remove("is-dragging");
+  });
+  scene.addEventListener("pointercancel", () => {
+    prototypeCamera.dragging = false;
+    scene.classList.remove("is-dragging");
+  });
+  scene.addEventListener(
+    "wheel",
+    (event) => {
+      event.preventDefault();
+      const direction = event.deltaY < 0 ? 0.08 : -0.08;
+      prototypeCamera.zoom = clamp(prototypeCamera.zoom + direction, 0.62, 1.65);
+      applyPrototypeCamera();
+    },
+    { passive: false }
+  );
+  scene.addEventListener("dblclick", () => {
+    const view = scene.dataset.view || "exterior";
+    setCameraPreset(view);
   });
 }
 function setupPhotoUpload() {
@@ -521,6 +601,7 @@ function setupEventListeners() {
   document.getElementById("copyBriefBtn").addEventListener("click", copyBrief);
   document.getElementById("generateAiBtn").addEventListener("click", generateAiPrototype);
   handleViewTabs();
+  setupPrototypeOrbit();
   setupPhotoUpload();
 }
 loadSavedDesign();

@@ -7,11 +7,24 @@ const builderHtml = await readFile('src/builder/index.html', 'utf8');
 const builderJs = await readFile('src/builder/builder.js', 'utf8');
 const builderCss = await readFile('src/builder/builder.css', 'utf8');
 
-const requiredHome = ['HomeForge AI', 'Build your dream home', 'modules', '/builder/', 'pricing'];
+const requiredHome = [
+  'Dream House Prototype Builder',
+  'Prototype Builder',
+  'AI Prototype',
+  'Contractor Brief',
+  'cinematic-preview',
+  'immersive-prototype-scene',
+];
 const missingHome = requiredHome.filter((text) => !html.includes(text));
 if (missingHome.length) throw new Error(`Missing required home content: ${missingHome.join(', ')}`);
-if (!css.includes('.house') || !css.includes('@media')) throw new Error('Missing responsive 3D house styling');
-if (!js.includes('IntersectionObserver')) throw new Error('Missing reveal animation logic');
+
+const requiredCss = ['INSANE 3D RETOUCH', '.cinematic-preview', '.immersive-prototype-scene', '.orbit-help', '@media'];
+const missingCss = requiredCss.filter((text) => !css.includes(text));
+if (missingCss.length) throw new Error(`Missing required CSS: ${missingCss.join(', ')}`);
+
+const requiredJs = ['setupPrototypeOrbit', 'setCameraPreset', 'applyPrototypeCamera', 'localStorage', 'Blob'];
+const missingJs = requiredJs.filter((text) => !js.includes(text));
+if (missingJs.length) throw new Error(`Missing required app logic: ${missingJs.join(', ')}`);
 
 const requiredBuilder = ['2D Floor Plan', 'Live 3D Massing', 'Save', 'Download JSON'];
 const missingBuilder = requiredBuilder.filter((text) => !builderHtml.includes(text));
@@ -22,4 +35,4 @@ if (!builderJs.includes('localStorage') || !builderJs.includes('Blob') || !build
 if (!builderCss.includes('.advanced-builder-shell') || !builderCss.includes('@media')) {
   throw new Error('Builder is missing layout or responsive styles');
 }
-console.log('Static site and builder checks passed');
+console.log('Static site, 3D prototype studio, and builder checks passed');
