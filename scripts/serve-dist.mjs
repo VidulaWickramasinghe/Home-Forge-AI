@@ -8,9 +8,17 @@ const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=
 
 createServer(async (req, res) => {
   const safePath = normalize(decodeURIComponent(req.url.split('?')[0])).replace(/^\.\.(\/|\\|$)/, '');
-  const file = join(root, safePath === '/' ? 'index.html' : safePath);
+  const requested = safePath === '/' ? 'index.html' : safePath.replace(/^\//, '');
+  const candidates = [join(root, requested), join(root, requested, 'index.html')];
   try {
-    const body = await readFile(file);
+    let body;
+    let file = candidates[0];
+    try {
+      body = await readFile(file);
+    } catch {
+      file = candidates[1];
+      body = await readFile(file);
+    }
     res.writeHead(200, { 'content-type': types[extname(file)] || 'application/octet-stream' });
     res.end(body);
   } catch {

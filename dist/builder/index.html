@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="HomeForge AI builder workspace with wall drawing, live 3D preview, materials, costs, save/load, and export." />
+    <title>HomeForge AI Builder</title>
+    <link rel="stylesheet" href="../styles.css" />
+    <link rel="stylesheet" href="./builder.css" />
+  </head>
+  <body class="builder-body">
+    <header class="builder-topbar glass">
+      <a class="brand" href="/">
+        <span class="brand-mark">⌂</span>
+        <span>HomeForge AI Builder</span>
+      </a>
+      <div class="topbar-actions">
+        <button id="saveProject">Save design</button>
+        <button id="loadProject">Load design</button>
+        <button id="exportProject" class="primary-action">Export JSON</button>
+      </div>
+    </header>
+
+    <main class="builder-shell">
+      <aside class="tools-panel glass" aria-label="Design tools">
+        <p class="kicker">Design Tools</p>
+        <h1>Draw the first floor plan.</h1>
+        <button class="tool active" data-tool="wall">Wall drawing</button>
+        <button class="tool" data-tool="door">Door marker</button>
+        <button class="tool" data-tool="window">Window marker</button>
+        <button class="tool" data-tool="select">Select / inspect</button>
+
+        <label>
+          Wall material
+          <select id="materialSelect">
+            <option value="concrete" data-rate="155">Polished concrete — $155/m²</option>
+            <option value="brick" data-rate="185">Warm brick — $185/m²</option>
+            <option value="timber" data-rate="210">Architectural timber — $210/m²</option>
+            <option value="render" data-rate="170">White render — $170/m²</option>
+          </select>
+        </label>
+
+        <label>
+          Wall height
+          <input id="wallHeight" type="range" min="2.4" max="4.2" step="0.1" value="2.7" />
+          <span id="wallHeightLabel">2.7 m</span>
+        </label>
+
+        <button id="clearPlan" class="danger">Clear plan</button>
+        <p class="hint">Tip: click two grid points to create a wall. The 3D preview, measurements, and cost panel update instantly.</p>
+      </aside>
+
+      <section class="plan-workspace glass" aria-label="2D floor plan editor">
+        <div class="workspace-heading">
+          <div>
+            <p class="kicker">2D Floor Plan Editor</p>
+            <h2>Snap-to-grid wall drawing system</h2>
+          </div>
+          <span id="activeToolLabel">Tool: Wall drawing</span>
+        </div>
+        <svg id="planCanvas" viewBox="0 0 720 520" role="img" aria-label="Interactive floor plan canvas">
+          <defs>
+            <pattern id="smallGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(103,232,249,.12)" stroke-width="1" />
+            </pattern>
+            <pattern id="grid" width="100" height="100" patternUnits="userSpaceOnUse">
+              <rect width="100" height="100" fill="url(#smallGrid)" />
+              <path d="M 100 0 L 0 0 0 100" fill="none" stroke="rgba(103,232,249,.28)" stroke-width="1.5" />
+            </pattern>
+          </defs>
+          <rect width="720" height="520" fill="url(#grid)" />
+          <g id="wallsLayer"></g>
+          <g id="pointsLayer"></g>
+        </svg>
+      </section>
+
+      <aside class="preview-panel glass" aria-label="Live 3D preview and material panel">
+        <p class="kicker">Live 3D Preview</p>
+        <div class="mini-viewport">
+          <div id="model3d" class="generated-model"></div>
+        </div>
+        <div class="material-card">
+          <h3 id="materialName">Polished concrete</h3>
+          <p id="materialDetails">Conceptual wall finish applied to generated wall masses.</p>
+        </div>
+      </aside>
+
+      <footer class="metrics-panel glass" aria-label="Cost and measurement panel">
+        <article><span>Total wall length</span><strong id="wallLength">0.0 m</strong></article>
+        <article><span>Wall surface</span><strong id="wallSurface">0.0 m²</strong></article>
+        <article><span>Estimated cost</span><strong id="estimatedCost">$0</strong></article>
+        <article><span>Design status</span><strong id="saveStatus">Unsaved</strong></article>
+      </footer>
+    </main>
+
+    <script src="./builder.js" type="module"></script>
+  </body>
+</html>
