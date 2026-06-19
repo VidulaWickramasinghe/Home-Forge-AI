@@ -20,6 +20,8 @@ function createThreeContext(mount, options = {}) {
   const height = mount.clientHeight || 1;
   const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 100);
   camera.position.set(...(options.cameraPosition || [6.5, 4.8, 7.2]));
+  const cameraTarget = new THREE.Vector3(...(options.cameraTarget || [0, 0.8, 0]));
+  camera.lookAt(cameraTarget);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -41,7 +43,7 @@ function createThreeContext(mount, options = {}) {
     controls.minDistance = 4;
     controls.maxDistance = 16;
     controls.maxPolarAngle = Math.PI / 2.05;
-    controls.target.set(0, 0.8, 0);
+    controls.target.copy(cameraTarget);
     controls.update();
   }
 
@@ -70,9 +72,10 @@ function createThreeContext(mount, options = {}) {
     camera.aspect = nextWidth / nextHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(nextWidth, nextHeight);
+    if (!controls) camera.lookAt(cameraTarget);
   });
   resizeObserver.observe(mount);
-  return { mount, scene, camera, renderer, controls, resizeObserver, model: null, animationId: null };
+  return { mount, scene, camera, renderer, controls, resizeObserver, model: null, animationId: null, cameraTarget };
 }
 
 function material(color, options = {}) {
@@ -175,15 +178,15 @@ function createHouseModel(design, options = {}) {
 function createHousePrototypeModel(design, options = {}) {
   const mats = createMaterials(design); const model = new THREE.Group(); model.name = "HomeForge AI 3D Prototype";
   if (options.viewMode === "interior") model.add(createInteriorModel(design, mats)); else { model.add(createLandElements(design, mats)); const house = createExteriorModel(design, mats, options); if (options.viewMode === "land") house.scale.setScalar(0.92); model.add(house); }
-  model.position.y = options.hero ? -0.12 : -0.25; model.rotation.y = options.hero ? -0.45 : 0; if (options.hero) model.scale.setScalar(0.82); return model;
+  model.position.y = options.hero ? 0.08 : -0.25; model.rotation.y = options.hero ? -0.45 : 0; if (options.hero) model.scale.setScalar(1); return model;
 }
 function disposeObject(object) { object.traverse((child) => { if (child.geometry) child.geometry.dispose(); if (child.material) Array.isArray(child.material) ? child.material.forEach((m) => m.dispose()) : child.material.dispose(); }); }
 function setContextModel(context, model) { if (!context) return; if (context.model) { context.scene.remove(context.model); disposeObject(context.model); } context.model = model; context.scene.add(model); }
 function applyCameraPreset(context, viewMode) { if (!context) return; const presets = { exterior: [[6.5,4.8,7.2],[0,0.8,0]], interior: [[4.4,3.2,4.8],[0,0.7,0]], land: [[5.8,6.8,7.8],[0,0,0]] }; const [pos, target] = presets[viewMode] || presets.exterior; context.camera.position.set(...pos); if (context.controls) { context.controls.target.set(...target); context.controls.update(); } }
 function animateContext(context, options = {}) { function loop() { context.animationId = requestAnimationFrame(loop); if (options.autoRotate && context.model) context.model.rotation.y += 0.0035; context.controls?.update(); context.renderer.render(context.scene, context.camera); } loop(); }
 
-export function initHeroWebGL() { const mount = document.getElementById("heroWebGL"); if (!mount || heroContext) return; try { heroContext = createThreeContext(mount, { controls: false, cameraPosition: [5.2, 3.8, 6.2] }); setContextModel(heroContext, createHousePrototypeModel(HERO_DESIGN, { hero: true, compact: true, viewMode: "exterior" })); animateContext(heroContext, { autoRotate: true }); } catch (error) { console.error("Hero WebGL failed to initialize:", error); } }
-export function initWebGLPrototypeBuilder(houseDesign) { const mount = document.getElementById("prototypeWebGL"); if (!mount || prototypeContext) return; try { prototypeContext = createThreeContext(mount, { controls: true, cameraPosition: [6.5, 4.8, 7.2] }); document.getElementById("prototypeScene")?.classList.add("webgl-active"); updateWebGLPrototype(houseDesign, activeViewMode); animateContext(prototypeContext); } catch (error) { console.error("WebGL prototype failed to initialize:", error); } }
+export function initHeroWebGL() { const mount = document.getElementById("heroWebGL"); if (!mount || heroContext) return; try { heroContext = createThreeContext(mount, { controls: false, cameraPosition: [4.8, 3.25, 5.35], cameraTarget: [0, 0.85, 0] }); setContextModel(heroContext, createHousePrototypeModel(HERO_DESIGN, { hero: true, compact: true, viewMode: "exterior" })); animateContext(heroContext, { autoRotate: true }); } catch (error) { console.error("Hero WebGL failed to initialize:", error); } }
+export function initWebGLPrototypeBuilder(houseDesign) { const mount = document.getElementById("prototypeWebGL"); if (!mount || prototypeContext) return; try { prototypeContext = createThreeContext(mount, { controls: true, cameraPosition: [6.5, 4.8, 7.2], cameraTarget: [0, 0.8, 0] }); document.getElementById("prototypeScene")?.classList.add("webgl-active"); updateWebGLPrototype(houseDesign, activeViewMode); animateContext(prototypeContext); } catch (error) { console.error("WebGL prototype failed to initialize:", error); } }
 export function updateWebGLPrototype(houseDesign, viewMode = "exterior") { if (!prototypeContext) return; activeViewMode = viewMode; setContextModel(prototypeContext, createHousePrototypeModel(houseDesign, { viewMode })); applyCameraPreset(prototypeContext, viewMode); }
 export function setPrototypeView(viewMode = "exterior") { activeViewMode = viewMode; applyCameraPreset(prototypeContext, viewMode); }
 export async function exportPrototypeGLB() { if (!prototypeContext?.model) { alert("3D prototype is not ready yet."); return; } const exporter = new GLTFExporter(); const exported = await exporter.parseAsync(prototypeContext.model, { binary: true, trs: false, onlyVisible: true }); const blob = new Blob([exported], { type: "model/gltf-binary" }); const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = "homeforge-ai-3d-prototype.glb"; anchor.click(); URL.revokeObjectURL(url); }
