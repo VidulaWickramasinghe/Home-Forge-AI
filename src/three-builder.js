@@ -4,714 +4,193 @@ import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
 
 let heroContext = null;
 let prototypeContext = null;
+let activeViewMode = "exterior";
+
+const HERO_DESIGN = {
+  land: { area: 600, shape: "rectangular", hasGarden: true, hasPool: true, hasDriveway: true },
+  building: { stories: 2, basementLevels: 0, shape: "modern-box", garage: "double", roofStyle: "gable", wallColor: "#e5e7eb", roofColor: "#111827" },
+  exterior: { windowStyle: "wide", doorStyle: "timber", hasSolar: true, hasBalcony: true, hasOutdoorArea: true },
+  interior: { bedrooms: 4, bathrooms: 3, furnishingStyle: "modern" },
+  estimate: { areaM2: 462, costAUD: 956600 }
+};
 
 function createThreeContext(mount, options = {}) {
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(
-    options.fov || 42,
-    1,
-    0.1,
-    100
-  );
-  camera.position.set(
-    options.cameraX ?? 6,
-    options.cameraY ?? 4,
-    options.cameraZ ?? 7
-  );
-  const renderer = new THREE.WebGLRenderer({
-    antialias: true,
-    alpha: true
-  });
+  const width = mount.clientWidth || 1;
+  const height = mount.clientHeight || 1;
+  const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 100);
+  camera.position.set(...(options.cameraPosition || [6.5, 4.8, 7.2]));
+  const cameraTarget = new THREE.Vector3(...(options.cameraTarget || [0, 0.8, 0]));
+  camera.lookAt(cameraTarget);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.setSize(mount.clientWidth, mount.clientHeight);
+  renderer.setSize(width, height);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.15;
+  renderer.toneMappingExposure = 1.1;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   mount.innerHTML = "";
   mount.appendChild(renderer.domElement);
-  const controls = options.controls
-    ? new OrbitControls(camera, renderer.domElement)
-    : null;
+
+  const controls = options.controls ? new OrbitControls(camera, renderer.domElement) : null;
   if (controls) {
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
-    controls.target.set(0, 0.6, 0);
+    controls.enableZoom = true;
+    controls.enablePan = true;
     controls.minDistance = 4;
-    controls.maxDistance = 15;
+    controls.maxDistance = 16;
     controls.maxPolarAngle = Math.PI / 2.05;
+    controls.target.copy(cameraTarget);
     controls.update();
   }
-  const ambient = new THREE.HemisphereLight(0xffffff, 0x0f172a, 1.1);
-  scene.add(ambient);
-  const keyLight = new THREE.DirectionalLight(0xffffff, 2.6);
-  keyLight.position.set(5, 8, 5);
-  keyLight.castShadow = true;
-  keyLight.shadow.mapSize.width = 2048;
-  keyLight.shadow.mapSize.height = 2048;
-  keyLight.shadow.camera.near = 0.5;
-  keyLight.shadow.camera.far = 30;
-  keyLight.shadow.camera.left = -10;
-  keyLight.shadow.camera.right = 10;
-  keyLight.shadow.camera.top = 10;
-  keyLight.shadow.camera.bottom = -10;
-  scene.add(keyLight);
-  const cyanLight = new THREE.PointLight(0x67e8f9, 2.2, 18);
-  cyanLight.position.set(-4, 3, 4);
-  scene.add(cyanLight);
-  const goldLight = new THREE.PointLight(0xfde68a, 1.8, 18);
-  goldLight.position.set(4, 3, -3);
-  scene.add(goldLight);
+
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x0f172a, 1.15));
+  const sun = new THREE.DirectionalLight(0xffffff, 2.5);
+  sun.position.set(5.5, 8, 4.5);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.camera.near = 0.5;
+  sun.shadow.camera.far = 32;
+  sun.shadow.camera.left = -10;
+  sun.shadow.camera.right = 10;
+  sun.shadow.camera.top = 10;
+  sun.shadow.camera.bottom = -10;
+  scene.add(sun);
+  const cyan = new THREE.PointLight(0x67e8f9, 1.8, 18);
+  cyan.position.set(-4.5, 2.8, 3.5);
+  scene.add(cyan);
+  const gold = new THREE.PointLight(0xfde68a, 1.45, 18);
+  gold.position.set(4.2, 3.2, -3.8);
+  scene.add(gold);
+
   const resizeObserver = new ResizeObserver(() => {
-    const width = mount.clientWidth || 1;
-    const height = mount.clientHeight || 1;
-    camera.aspect = width / height;
+    const nextWidth = mount.clientWidth || 1;
+    const nextHeight = mount.clientHeight || 1;
+    camera.aspect = nextWidth / nextHeight;
     camera.updateProjectionMatrix();
-    renderer.setSize(width, height);
+    renderer.setSize(nextWidth, nextHeight);
+    if (!controls) camera.lookAt(cameraTarget);
   });
   resizeObserver.observe(mount);
+  return { mount, scene, camera, renderer, controls, resizeObserver, model: null, animationId: null, cameraTarget };
+}
+
+function material(color, options = {}) {
+  return new THREE.MeshStandardMaterial({ color, roughness: options.roughness ?? 0.45, metalness: options.metalness ?? 0.06, transparent: options.transparent ?? false, opacity: options.opacity ?? 1, emissive: options.emissive ?? 0x000000, emissiveIntensity: options.emissiveIntensity ?? 0 });
+}
+function physical(color, options = {}) {
+  return new THREE.MeshPhysicalMaterial({ color, roughness: options.roughness ?? 0.18, metalness: options.metalness ?? 0.02, transmission: options.transmission ?? 0, thickness: options.thickness ?? 0.2, transparent: options.transparent ?? false, opacity: options.opacity ?? 1, emissive: options.emissive ?? 0x000000, emissiveIntensity: options.emissiveIntensity ?? 0 });
+}
+function box(name, w, h, d, mat, x = 0, y = 0, z = 0) {
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+  mesh.name = name;
+  mesh.position.set(x, y, z);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  return mesh;
+}
+function dims(design) {
+  const areaScale = Math.sqrt((Number(design.land?.area) || 600) / 600);
+  let landWidth = 8.2 * areaScale;
+  let landDepth = 5.8 * areaScale;
+  if (design.land?.shape === "wide") { landWidth *= 1.2; landDepth *= 0.9; }
+  if (design.land?.shape === "narrow") { landWidth *= 0.78; landDepth *= 1.2; }
+  const map = { "modern-box": [3.4, 2.35], "l-shape": [4.2, 2.6], "wide-villa": [5, 2.45], compact: [2.6, 2.15], "luxury-wing": [5.4, 2.8] };
+  const [houseWidth, houseDepth] = map[design.building?.shape] || map["modern-box"];
+  return { landWidth, landDepth, houseWidth, houseDepth };
+}
+function createMaterials(design) {
   return {
-    mount,
-    scene,
-    camera,
-    renderer,
-    controls,
-    resizeObserver,
-    model: null,
-    animationId: null
+    land: material(0x123331, { roughness: 0.72 }), lawn: material(0x22c55e, { roughness: 0.82 }), driveway: material(0x94a3b8, { roughness: 0.6 }),
+    wall: material(design.building?.wallColor || "#e5e7eb", { roughness: 0.36 }), roof: material(design.building?.roofColor || "#111827", { roughness: 0.3, metalness: 0.16 }),
+    glass: physical(0x67e8f9, { roughness: 0.04, transmission: 0.25, transparent: true, opacity: 0.72, emissive: 0x0284c7, emissiveIntensity: 0.22 }),
+    pool: physical(0x22d3ee, { roughness: 0.02, transmission: 0.35, transparent: true, opacity: 0.78, emissive: 0x0891b2, emissiveIntensity: 0.28 }),
+    timber: material(0x92400e, { roughness: 0.48 }), garage: material(0xf1f5f9, { roughness: 0.4 }), trim: material(0xffffff, { roughness: 0.28 }), solar: material(0x075985, { roughness: 0.18, metalness: 0.48, emissive: 0x0ea5e9, emissiveIntensity: 0.14 }),
+    basement: material(0x312e81, { roughness: 0.55, emissive: 0x1e1b4b, emissiveIntensity: 0.15 }), partition: material(0xcbd5e1, { roughness: 0.52 }),
+    zoneLiving: material(0xdbeafe, { roughness: 0.55 }), zoneKitchen: material(0xecfeff, { roughness: 0.55 }), zoneBedroom: material(0xfef3c7, { roughness: 0.55 }), zoneBath: material(0xe0f2fe, { roughness: 0.55 })
   };
 }
-function createMaterial(color, options = {}) {
-  return new THREE.MeshStandardMaterial({
-    color,
-    roughness: options.roughness ?? 0.45,
-    metalness: options.metalness ?? 0.08,
-    emissive: options.emissive ?? 0x000000,
-    emissiveIntensity: options.emissiveIntensity ?? 0,
-    transparent: options.transparent ?? false,
-    opacity: options.opacity ?? 1
-  });
+function createRoofMesh(design, width, depth, y, mats) {
+  const style = design.building?.roofStyle || "gable";
+  if (style === "flat") return box("Flat Roof", width + 0.28, 0.22, depth + 0.28, mats.roof, 0, y + 0.1, 0);
+  if (style === "hip") { const r = new THREE.Mesh(new THREE.ConeGeometry(Math.max(width, depth) * 0.76, 0.9, 4), mats.roof); r.name = "Hip Roof"; r.position.set(0, y + 0.45, 0); r.rotation.y = Math.PI / 4; r.scale.z = depth / width; r.castShadow = r.receiveShadow = true; return r; }
+  const group = new THREE.Group(); group.name = `${style} Roof`;
+  const roof = style === "skillion" ? box("Skillion Roof", width + 0.35, 0.24, depth + 0.35, mats.roof, 0, y + 0.18, 0) : createGable(width + 0.35, depth + 0.35, 0.85, mats.roof);
+  if (style === "skillion") roof.rotation.z = -0.14;
+  roof.position.y = style === "gable" || style === "mixed" ? y : roof.position.y;
+  group.add(roof);
+  if (style === "mixed") { const side = box("Mixed Skillion Wing", width * 0.44, 0.2, depth * 0.78, mats.roof, width * 0.22, y + 0.22, 0); side.rotation.z = -0.12; group.add(side); }
+  return group;
 }
-function createPhysicalMaterial(color, options = {}) {
-  return new THREE.MeshPhysicalMaterial({
-    color,
-    roughness: options.roughness ?? 0.35,
-    metalness: options.metalness ?? 0.05,
-    transmission: options.transmission ?? 0,
-    thickness: options.thickness ?? 0,
-    transparent: options.transparent ?? false,
-    opacity: options.opacity ?? 1
-  });
+function createGable(width, depth, height, mat) {
+  const w = width / 2, d = depth / 2;
+  const vertices = new Float32Array([-w,0,d, w,0,d, 0,height,d, -w,0,-d, w,0,-d, 0,height,-d]);
+  const indices = [0,1,2,5,4,3,0,3,4,0,4,1,0,2,5,0,5,3,2,1,4,2,4,5];
+  const geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(vertices, 3)); geo.setIndex(indices); geo.computeVertexNormals();
+  const mesh = new THREE.Mesh(geo, mat); mesh.castShadow = mesh.receiveShadow = true; return mesh;
 }
-function createBox(name, width, height, depth, material, x, y, z) {
-  const mesh = new THREE.Mesh(
-    new THREE.BoxGeometry(width, height, depth),
-    material
-  );
-  mesh.name = name;
-  mesh.position.set(x, y, z);
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
-  return mesh;
+function createLandElements(design, mats) {
+  const { landWidth, landDepth } = dims(design); const g = new THREE.Group();
+  g.add(box("Land Slab", landWidth, 0.28, landDepth, mats.land, 0, -0.14, 0));
+  if (design.land?.hasDriveway) g.add(box("Driveway", 1.35, 0.045, landDepth * 0.58, mats.driveway, landWidth * 0.3, 0.045, landDepth * 0.13));
+  if (design.land?.hasGarden) g.add(box("Garden Zone", landWidth * 0.28, 0.06, landDepth * 0.25, mats.lawn, -landWidth * 0.3, 0.06, -landDepth * 0.27));
+  if (design.land?.hasPool) g.add(box("Swimming Pool", 1.65, 0.08, 0.82, mats.pool, landWidth * 0.26, 0.08, -landDepth * 0.31));
+  if (design.exterior?.hasOutdoorArea) g.add(box("Outdoor Timber Deck", 1.75, 0.06, 0.95, mats.timber, -landWidth * 0.2, 0.08, landDepth * 0.23));
+  if (design.land?.shape === "corner") g.add(box("Corner Site Marker", 1.0, 0.07, 1.0, mats.driveway, -landWidth * 0.42, 0.07, landDepth * 0.38));
+  return g;
 }
-function createCylinder(name, radiusTop, radiusBottom, height, material, x, y, z) {
-  const mesh = new THREE.Mesh(
-    new THREE.CylinderGeometry(radiusTop, radiusBottom, height, 48),
-    material
-  );
-  mesh.name = name;
-  mesh.position.set(x, y, z);
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
-  return mesh;
+function addWindows(group, design, width, depth, floor, floorHeight, mats) {
+  const style = design.exterior?.windowStyle || "wide";
+  const size = { standard: [0.48,0.34], wide: [0.78,0.38], "full-glass": [0.86,0.72], arched: [0.55,0.52] }[style] || [0.78,0.38];
+  const y = floor * floorHeight + floorHeight * 0.55;
+  [-0.25, 0.25].forEach((p, i) => group.add(box(`Window ${floor + 1}-${i + 1}`, size[0], size[1], 0.04, mats.glass, width * p, y, depth / 2 + 0.025)));
+  group.add(box(`Side Window ${floor + 1}`, 0.04, size[1], size[0], mats.glass, width / 2 + 0.025, y, -depth * 0.12));
 }
-function createGableRoof(width, depth, height, material) {
-  const w = width / 2;
-  const d = depth / 2;
-  const vertices = new Float32Array([
-    -w, 0, d,
-     w, 0, d,
-     0, height, d,
-    -w, 0, -d,
-     w, 0, -d,
-     0, height, -d
-  ]);
-  const indices = [
-    0, 1, 2,
-    5, 4, 3,
-    0, 3, 4,
-    0, 4, 1,
-    0, 2, 5,
-    0, 5, 3,
-    2, 1, 4,
-    2, 4, 5
-  ];
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
-  geometry.setIndex(indices);
-  geometry.computeVertexNormals();
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.name = "Gable Roof";
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
-  return mesh;
+function createExteriorModel(design, mats, options = {}) {
+  const { houseWidth: w, houseDepth: d } = dims(design); const g = new THREE.Group(); const floorHeight = options.compact ? 0.74 : 1.05; const stories = Math.max(1, Math.min(Number(design.building?.stories) || 1, 4));
+  for (let i = 0; i < stories; i++) { g.add(box(`Floor ${i + 1}`, w, floorHeight, d, mats.wall, 0, floorHeight / 2 + i * floorHeight, 0)); addWindows(g, design, w, d, i, floorHeight, mats); }
+  if (design.building?.shape === "l-shape") g.add(box("L Shape Wing", w * 0.34, floorHeight, d * 0.82, mats.wall, -w * 0.55, floorHeight / 2, -d * 0.18));
+  if ((design.building?.basementLevels || 0) > 0) g.add(box("Basement Levels", w * 0.86, 0.42 * design.building.basementLevels, d * 0.82, mats.basement, 0, -0.21 * design.building.basementLevels, 0));
+  const doorMat = design.exterior?.doorStyle === "black" ? material(0x020617) : design.exterior?.doorStyle === "glass" ? mats.glass : mats.timber;
+  g.add(box("Entry Door", design.exterior?.doorStyle === "wide" ? 0.68 : 0.44, 0.78, 0.05, doorMat, -w * 0.34, 0.39, d / 2 + 0.035));
+  if (design.building?.garage !== "none") { const gw = { single: 0.9, double: 1.3, triple: 1.7 }[design.building?.garage] || 1.3; g.add(box("Garage", gw, 0.72, 0.9, mats.garage, w / 2 + gw / 2 - 0.05, 0.36, d * 0.08)); }
+  if (design.exterior?.hasBalcony && stories > 1) g.add(box("Glass Balcony", 1.45, 0.11, 0.34, mats.glass, -w * 0.18, floorHeight + 0.02, d / 2 + 0.25));
+  g.add(createRoofMesh(design, w, d, stories * floorHeight + 0.04, mats));
+  if (design.exterior?.hasSolar) { g.add(box("Solar Panel 1", 0.55, 0.035, 0.28, mats.solar, -0.38, stories * floorHeight + 0.58, 0.18)); g.add(box("Solar Panel 2", 0.55, 0.035, 0.28, mats.solar, 0.26, stories * floorHeight + 0.58, 0.18)); }
+  g.position.set(-0.25, 0.04, 0.08); return g;
 }
-function createSkillionRoof(width, depth, height, material) {
-  const w = width / 2;
-  const d = depth / 2;
-  const low = 0;
-  const high = height;
-  const vertices = new Float32Array([
-    -w, low, d,
-     w, high, d,
-     w, high, -d,
-    -w, low, -d,
-    -w, -0.18, d,
-     w, -0.18, d,
-     w, -0.18, -d,
-    -w, -0.18, -d
-  ]);
-  const indices = [
-    0, 1, 2, 0, 2, 3,
-    4, 7, 6, 4, 6, 5,
-    0, 4, 5, 0, 5, 1,
-    1, 5, 6, 1, 6, 2,
-    2, 6, 7, 2, 7, 3,
-    3, 7, 4, 3, 4, 0
-  ];
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute("position", new THREE.BufferAttribute(vertices, 3));
-  geometry.setIndex(indices);
-  geometry.computeVertexNormals();
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.name = "Skillion Roof";
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
-  return mesh;
+function createInteriorModel(design, mats) {
+  const { houseWidth: w, houseDepth: d } = dims(design); const g = new THREE.Group();
+  g.add(createLandElements({ ...design, land: { ...design.land, hasPool: false, hasGarden: false } }, mats));
+  const house = new THREE.Group(); house.position.set(-0.25, 0.08, 0.08);
+  [["Living Room",mats.zoneLiving,-w/4,d/4],["Kitchen",mats.zoneKitchen,w/4,d/4],["Bedroom",mats.zoneBedroom,-w/4,-d/4],["Bathroom",mats.zoneBath,w/4,-d/4]].forEach(([n,m,x,z]) => house.add(box(n, w/2-0.04, 0.06, d/2-0.04, m, x, 0.03, z)));
+  house.add(box("Rear Wall", w, 0.72, 0.08, mats.wall, 0, 0.39, -d/2)); house.add(box("Left Wall", 0.08, 0.72, d, mats.wall, -w/2, 0.39, 0)); house.add(box("Right Wall", 0.08, 0.72, d, mats.wall, w/2, 0.39, 0));
+  house.add(box("Centre Partition", w, 0.42, 0.04, mats.partition, 0, 0.24, 0)); house.add(box("Cross Partition", 0.04, 0.42, d, mats.partition, 0, 0.24, 0));
+  house.add(box("Sofa", 0.75, 0.22, 0.32, mats.timber, -w*0.28, 0.17, d*0.28)); house.add(box("Kitchen Island", 0.72, 0.28, 0.3, mats.garage, w*0.25, 0.2, d*0.25)); house.add(box("Bed", 0.78, 0.2, 0.55, mats.timber, -w*0.25, 0.16, -d*0.25)); house.add(box("Bathroom Fixtures", 0.48, 0.25, 0.42, mats.glass, w*0.25, 0.18, -d*0.25));
+  g.add(house); return g;
 }
-function createRoof(state, width, depth, roofY, material) {
-  let roof;
-  if (state.roofStyle === "flat") {
-    roof = createBox("Flat Roof", width + 0.25, 0.22, depth + 0.25, material, 0, roofY + 0.1, 0);
-  } else if (state.roofStyle === "hip") {
-    roof = new THREE.Mesh(
-      new THREE.ConeGeometry(Math.max(width, depth) * 0.75, 0.9, 4),
-      material
-    );
-    roof.name = "Hip Roof";
-    roof.position.set(0, roofY + 0.45, 0);
-    roof.rotation.y = Math.PI / 4;
-    roof.scale.z = depth / width;
-    roof.castShadow = true;
-    roof.receiveShadow = true;
-  } else if (state.roofStyle === "skillion") {
-    roof = createSkillionRoof(width + 0.35, depth + 0.35, 0.75, material);
-    roof.position.set(0, roofY + 0.05, 0);
-  } else if (state.roofStyle === "mixed") {
-    roof = new THREE.Group();
-    roof.name = "Mixed Architectural Roof";
-    const main = createGableRoof(width * 0.72, depth + 0.35, 0.85, material);
-    main.position.set(-width * 0.15, roofY, 0);
-    const side = createSkillionRoof(width * 0.45, depth * 0.72, 0.65, material);
-    side.position.set(width * 0.25, roofY + 0.05, 0.05);
-    roof.add(main, side);
-  } else {
-    roof = createGableRoof(width + 0.35, depth + 0.35, 0.9, material);
-    roof.position.set(0, roofY, 0);
-  }
-  return roof;
+function createHouseModel(design, options = {}) {
+  return createHousePrototypeModel(design, options);
 }
-function getHouseDimensions(state) {
-  const shape = state.houseShape;
-  const dimensions = {
-    "modern-box": { width: 3.4, depth: 2.35 },
-    "l-shape": { width: 4.2, depth: 2.6 },
-    "wide-villa": { width: 5.0, depth: 2.45 },
-    compact: { width: 2.6, depth: 2.15 },
-    "luxury-wing": { width: 5.4, depth: 2.8 }
-  };
-  return dimensions[shape] || dimensions["modern-box"];
+function createHousePrototypeModel(design, options = {}) {
+  const mats = createMaterials(design); const model = new THREE.Group(); model.name = "HomeForge AI 3D Prototype";
+  if (options.viewMode === "interior") model.add(createInteriorModel(design, mats)); else { model.add(createLandElements(design, mats)); const house = createExteriorModel(design, mats, options); if (options.viewMode === "land") house.scale.setScalar(0.92); model.add(house); }
+  model.position.y = options.hero ? 0.08 : -0.25; model.rotation.y = options.hero ? -0.45 : 0; if (options.hero) model.scale.setScalar(1); return model;
 }
-function getLandDimensions(state) {
-  const areaScale = Math.sqrt((Number(state.landArea) || 600) / 600);
-  let width = 8.2 * areaScale;
-  let depth = 5.8 * areaScale;
-  if (state.landShape === "wide") {
-    width *= 1.22;
-    depth *= 0.88;
-  }
-  if (state.landShape === "narrow") {
-    width *= 0.78;
-    depth *= 1.18;
-  }
-  if (state.landShape === "corner") {
-    width *= 1.05;
-    depth *= 1.02;
-  }
-  return { width, depth };
-}
-function addWindowsToFloor(group, state, width, depth, floorIndex, floorHeight, baseY) {
-  const glassMaterial = createPhysicalMaterial(0x67e8f9, {
-    roughness: 0.08,
-    metalness: 0.05,
-    transmission: 0.25,
-    transparent: true,
-    opacity: 0.82,
-    emissive: 0x0284c7,
-    emissiveIntensity: 0.35
-  });
-  const windowStyle = state.windowStyle;
-  const size = {
-    standard: { w: 0.48, h: 0.34 },
-    wide: { w: 0.78, h: 0.38 },
-    "full-glass": { w: 0.86, h: 0.72 },
-    arched: { w: 0.55, h: 0.52 }
-  }[windowStyle] || { w: 0.72, h: 0.38 };
-  const y = baseY + floorHeight * 0.55;
-  const zFront = depth / 2 + 0.025;
-  const windowPositions = [
-    [-width * 0.22, y, zFront],
-    [width * 0.22, y, zFront]
-  ];
-  if (width > 3.6) {
-    windowPositions.push([width * 0.42, y, zFront]);
-  }
-  windowPositions.forEach((position, index) => {
-    const windowMesh = createBox(
-      `Window ${floorIndex + 1}-${index + 1}`,
-      size.w,
-      size.h,
-      0.04,
-      glassMaterial,
-      position[0],
-      position[1],
-      position[2]
-    );
-    group.add(windowMesh);
-  });
-  const sideWindow = createBox(
-    `Side Window ${floorIndex + 1}`,
-    0.04,
-    size.h,
-    size.w,
-    glassMaterial,
-    width / 2 + 0.025,
-    y,
-    -depth * 0.12
-  );
-  group.add(sideWindow);
-}
-function createHouseModel(state, options = {}) {
-  const model = new THREE.Group();
-  model.name = "HomeForge AI WebGL Prototype";
-  const land = getLandDimensions(state);
-  const house = getHouseDimensions(state);
-  const landMaterial = createMaterial(0x0f2f2e, {
-    roughness: 0.62,
-    metalness: 0.05
-  });
-  const landMesh = createBox(
-    "Land Block",
-    land.width,
-    0.28,
-    land.depth,
-    landMaterial,
-    0,
-    -0.14,
-    0
-  );
-  landMesh.receiveShadow = true;
-  model.add(landMesh);
-  const gridHelper = new THREE.GridHelper(
-    Math.max(land.width, land.depth),
-    18,
-    0x67e8f9,
-    0x164e63
-  );
-  gridHelper.name = "Land Planning Grid";
-  gridHelper.position.y = 0.015;
-  gridHelper.material.transparent = true;
-  gridHelper.material.opacity = 0.22;
-  model.add(gridHelper);
-  const drivewayMaterial = createMaterial(0x94a3b8, {
-    roughness: 0.58,
-    metalness: 0.05
-  });
-  const driveway = createBox(
-    "Driveway",
-    1.35,
-    0.045,
-    land.depth * 0.58,
-    drivewayMaterial,
-    land.width * 0.3,
-    0.05,
-    land.depth * 0.13
-  );
-  model.add(driveway);
-  if (state.includeGarden) {
-    const gardenMaterial = createMaterial(0x22c55e, {
-      roughness: 0.8,
-      metalness: 0
-    });
-    const garden = createCylinder(
-      "Garden Landscape",
-      0.95,
-      0.95,
-      0.07,
-      gardenMaterial,
-      -land.width * 0.32,
-      0.08,
-      -land.depth * 0.25
-    );
-    garden.scale.z = 0.55;
-    model.add(garden);
-  }
-  if (state.includePool) {
-    const poolMaterial = createPhysicalMaterial(0x22d3ee, {
-      roughness: 0.03,
-      metalness: 0,
-      transmission: 0.35,
-      transparent: true,
-      opacity: 0.82,
-      emissive: 0x0891b2,
-      emissiveIntensity: 0.25
-    });
-    const pool = createBox(
-      "Swimming Pool",
-      1.65,
-      0.08,
-      0.82,
-      poolMaterial,
-      land.width * 0.26,
-      0.09,
-      -land.depth * 0.31
-    );
-    model.add(pool);
-  }
-  const houseGroup = new THREE.Group();
-  houseGroup.name = "Generated House";
-  const houseMaterial = createMaterial(state.houseColor || "#e5e7eb", {
-    roughness: 0.38,
-    metalness: 0.08
-  });
-  const roofMaterial = createMaterial(state.roofColor || "#111827", {
-    roughness: 0.28,
-    metalness: 0.18
-  });
-  const trimMaterial = createMaterial(0xf8fafc, {
-    roughness: 0.25,
-    metalness: 0.05
-  });
-  const doorMaterial = createMaterial(
-    state.doorStyle === "black"
-      ? 0x020617
-      : state.doorStyle === "glass"
-        ? 0x38bdf8
-        : 0x92400e,
-    {
-      roughness: 0.32,
-      metalness: state.doorStyle === "black" ? 0.22 : 0.04,
-      emissive: state.doorStyle === "glass" ? 0x0284c7 : 0x000000,
-      emissiveIntensity: state.doorStyle === "glass" ? 0.18 : 0
-    }
-  );
-  const floorHeight = options.compact ? 0.74 : 1.05;
-  const stories = Math.max(1, Math.min(Number(state.stories) || 1, 4));
-  const totalHeight = floorHeight * stories;
-  for (let i = 0; i < stories; i += 1) {
-    const floor = createBox(
-      `Floor ${i + 1}`,
-      house.width,
-      floorHeight,
-      house.depth,
-      houseMaterial,
-      0,
-      floorHeight / 2 + i * floorHeight,
-      0
-    );
-    houseGroup.add(floor);
-    addWindowsToFloor(houseGroup, state, house.width, house.depth, i, floorHeight, i * floorHeight);
-  }
-  const doorWidth = state.doorStyle === "wide" ? 0.68 : 0.44;
-  const door = createBox(
-    "Entry Door",
-    doorWidth,
-    0.78,
-    0.05,
-    doorMaterial,
-    -house.width * 0.34,
-    0.39,
-    house.depth / 2 + 0.035
-  );
-  houseGroup.add(door);
-  if (state.garage !== "none") {
-    const garageWidth = {
-      single: 0.9,
-      double: 1.25,
-      triple: 1.65
-    }[state.garage] || 1.25;
-    const garage = createBox(
-      `${state.garage} Garage`,
-      garageWidth,
-      0.72,
-      0.9,
-      trimMaterial,
-      house.width / 2 + garageWidth / 2 - 0.05,
-      0.36,
-      house.depth * 0.08
-    );
-    houseGroup.add(garage);
-  }
-  if (state.basement > 0) {
-    const basementMaterial = createMaterial(0x312e81, {
-      roughness: 0.55,
-      metalness: 0.08,
-      emissive: 0x1e1b4b,
-      emissiveIntensity: 0.18
-    });
-    const basementHeight = 0.42 * Number(state.basement);
-    const basement = createBox(
-      "Underground Floor",
-      house.width * 0.86,
-      basementHeight,
-      house.depth * 0.82,
-      basementMaterial,
-      0,
-      -basementHeight / 2,
-      0
-    );
-    houseGroup.add(basement);
-  }
-  if (state.balcony && stories > 1) {
-    const balconyMaterial = createPhysicalMaterial(0xffffff, {
-      roughness: 0.08,
-      metalness: 0,
-      transmission: 0.35,
-      transparent: true,
-      opacity: 0.55
-    });
-    const balcony = createBox(
-      "Glass Balcony",
-      1.45,
-      0.11,
-      0.34,
-      balconyMaterial,
-      -house.width * 0.18,
-      floorHeight + 0.02,
-      house.depth / 2 + 0.25
-    );
-    houseGroup.add(balcony);
-  }
-  const roof = createRoof(state, house.width, house.depth, totalHeight + 0.04, roofMaterial);
-  houseGroup.add(roof);
-  if (state.solarPanels) {
-    const solarMaterial = createMaterial(0x075985, {
-      roughness: 0.18,
-      metalness: 0.48,
-      emissive: 0x0ea5e9,
-      emissiveIntensity: 0.15
-    });
-    const solarOne = createBox(
-      "Solar Panel 1",
-      0.55,
-      0.035,
-      0.28,
-      solarMaterial,
-      -0.42,
-      totalHeight + 0.58,
-      0.18
-    );
-    const solarTwo = createBox(
-      "Solar Panel 2",
-      0.55,
-      0.035,
-      0.28,
-      solarMaterial,
-      0.22,
-      totalHeight + 0.58,
-      0.18
-    );
-    solarOne.rotation.x = -0.22;
-    solarTwo.rotation.x = -0.22;
-    houseGroup.add(solarOne, solarTwo);
-  }
-  if (state.houseShape === "l-shape") {
-    const wing = createBox(
-      "L Shape Wing",
-      house.width * 0.34,
-      floorHeight,
-      house.depth * 0.82,
-      houseMaterial,
-      -house.width * 0.55,
-      floorHeight / 2,
-      -house.depth * 0.18
-    );
-    houseGroup.add(wing);
-  }
-  if (state.outdoorArea) {
-    const deckMaterial = createMaterial(0x78350f, {
-      roughness: 0.5,
-      metalness: 0.05
-    });
-    const deck = createBox(
-      "Outdoor Entertainment Deck",
-      1.75,
-      0.06,
-      0.95,
-      deckMaterial,
-      -land.width * 0.2,
-      0.08,
-      land.depth * 0.23
-    );
-    model.add(deck);
-  }
-  houseGroup.position.set(-0.25, 0.04, 0.08);
-  model.add(houseGroup);
-  if (state.smartHome) {
-    const smartMaterial = createMaterial(0x67e8f9, {
-      roughness: 0.15,
-      metalness: 0.3,
-      emissive: 0x0891b2,
-      emissiveIntensity: 0.7
-    });
-    const beacon = createCylinder(
-      "Smart Home Hub",
-      0.08,
-      0.08,
-      0.16,
-      smartMaterial,
-      -land.width * 0.42,
-      0.22,
-      land.depth * 0.34
-    );
-    model.add(beacon);
-  }
-  model.rotation.y = options.hero ? -0.45 : 0;
-  model.position.y = options.hero ? -0.1 : -0.25;
-  return model;
-}
-function disposeObject(object) {
-  object.traverse((child) => {
-    if (child.geometry) {
-      child.geometry.dispose();
-    }
-    if (child.material) {
-      if (Array.isArray(child.material)) {
-        child.material.forEach((material) => material.dispose());
-      } else {
-        child.material.dispose();
-      }
-    }
-  });
-}
-function setContextModel(context, model) {
-  if (!context) return;
-  if (context.model) {
-    context.scene.remove(context.model);
-    disposeObject(context.model);
-  }
-  context.model = model;
-  context.scene.add(model);
-}
-function animateContext(context, options = {}) {
-  function loop() {
-    context.animationId = requestAnimationFrame(loop);
-    if (options.autoRotate && context.model) {
-      context.model.rotation.y += 0.004;
-    }
-    if (context.controls) {
-      context.controls.update();
-    }
-    context.renderer.render(context.scene, context.camera);
-  }
-  loop();
-}
-export function initHeroWebGL() {
-  const mount = document.getElementById("heroWebGL");
-  if (!mount || heroContext) return;
-  heroContext = createThreeContext(mount, {
-    controls: false,
-    fov: 38,
-    cameraX: 5.8,
-    cameraY: 4.4,
-    cameraZ: 6.8
-  });
-  const heroState = {
-    landArea: 600,
-    landShape: "rectangular",
-    stories: 2,
-    basement: 0,
-    houseShape: "modern-box",
-    garage: "double",
-    roofStyle: "gable",
-    houseColor: "#e5e7eb",
-    roofColor: "#111827",
-    windowStyle: "wide",
-    doorStyle: "timber",
-    includeGarden: true,
-    includePool: true,
-    solarPanels: true,
-    balcony: true,
-    outdoorArea: true,
-    smartHome: false
-  };
-  setContextModel(heroContext, createHouseModel(heroState, { hero: true, compact: true }));
-  animateContext(heroContext, { autoRotate: true });
-}
-export function initWebGLPrototypeBuilder(state) {
-  const mount = document.getElementById("prototypeWebGL");
-  if (!mount || prototypeContext) return;
-  const sceneElement = document.getElementById("prototypeScene");
-  prototypeContext = createThreeContext(mount, {
-    controls: true,
-    fov: 42,
-    cameraX: 6.8,
-    cameraY: 5.2,
-    cameraZ: 7.4
-  });
-  sceneElement?.classList.add("webgl-active");
-  focusWebGLPrototypeView("exterior");
-  updateWebGLPrototype(state);
-  animateContext(prototypeContext);
-}
-export function updateWebGLPrototype(state) {
-  if (!prototypeContext) return;
-  const nextModel = createHouseModel(state);
-  setContextModel(prototypeContext, nextModel);
-}
-export function focusWebGLPrototypeView(view = "exterior") {
-  if (!prototypeContext) return;
-  const presets = {
-    exterior: { position: [6.8, 5.2, 7.4], target: [0, 0.75, 0] },
-    interior: { position: [3.2, 2.4, 4.2], target: [0, 1.0, 0] },
-    land: { position: [0, 8.8, 8.4], target: [0, 0, 0] }
-  };
-  const preset = presets[view] || presets.exterior;
-  prototypeContext.camera.position.set(...preset.position);
-  if (prototypeContext.controls) {
-    prototypeContext.controls.target.set(...preset.target);
-    prototypeContext.controls.update();
-  }
-}
-export async function exportPrototypeGLB() {
-  if (!prototypeContext?.model) {
-    alert("3D prototype is not ready yet.");
-    return;
-  }
-  const exporter = new GLTFExporter();
-  const exported = await exporter.parseAsync(prototypeContext.model, {
-    binary: true,
-    trs: false,
-    onlyVisible: true
-  });
-  const blob = new Blob([exported], {
-    type: "model/gltf-binary"
-  });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = "homeforge-ai-3d-prototype.glb";
-  anchor.click();
-  URL.revokeObjectURL(url);
+function disposeObject(object) { object.traverse((child) => { if (child.geometry) child.geometry.dispose(); if (child.material) Array.isArray(child.material) ? child.material.forEach((m) => m.dispose()) : child.material.dispose(); }); }
+function setContextModel(context, model) { if (!context) return; if (context.model) { context.scene.remove(context.model); disposeObject(context.model); } context.model = model; context.scene.add(model); }
+function applyCameraPreset(context, viewMode) { if (!context) return; const presets = { exterior: [[6.5,4.8,7.2],[0,0.8,0]], interior: [[4.4,3.2,4.8],[0,0.7,0]], land: [[5.8,6.8,7.8],[0,0,0]] }; const [pos, target] = presets[viewMode] || presets.exterior; context.camera.position.set(...pos); if (context.controls) { context.controls.target.set(...target); context.controls.update(); } }
+function animateContext(context, options = {}) { function loop() { context.animationId = requestAnimationFrame(loop); if (options.autoRotate && context.model) context.model.rotation.y += 0.0035; context.controls?.update(); context.renderer.render(context.scene, context.camera); } loop(); }
+
+export function initHeroWebGL() { const mount = document.getElementById("heroWebGL"); if (!mount || heroContext) return; try { heroContext = createThreeContext(mount, { controls: false, cameraPosition: [4.8, 3.25, 5.35], cameraTarget: [0, 0.85, 0] }); setContextModel(heroContext, createHousePrototypeModel(HERO_DESIGN, { hero: true, compact: true, viewMode: "exterior" })); animateContext(heroContext, { autoRotate: true }); } catch (error) { console.error("Hero WebGL failed to initialize:", error); } }
+export function initWebGLPrototypeBuilder(houseDesign) { const mount = document.getElementById("prototypeWebGL"); if (!mount || prototypeContext) return; try { prototypeContext = createThreeContext(mount, { controls: true, cameraPosition: [6.5, 4.8, 7.2], cameraTarget: [0, 0.8, 0] }); document.getElementById("prototypeScene")?.classList.add("webgl-active"); updateWebGLPrototype(houseDesign, activeViewMode); animateContext(prototypeContext); } catch (error) { console.error("WebGL prototype failed to initialize:", error); } }
+export function updateWebGLPrototype(houseDesign, viewMode = "exterior") { if (!prototypeContext) return; activeViewMode = viewMode; setContextModel(prototypeContext, createHousePrototypeModel(houseDesign, { viewMode })); applyCameraPreset(prototypeContext, viewMode); }
+export function setPrototypeView(viewMode = "exterior") { activeViewMode = viewMode; applyCameraPreset(prototypeContext, viewMode); }
+export async function exportPrototypeGLB() { if (!prototypeContext?.model) { alert("3D prototype is not ready yet."); return; } const exporter = new GLTFExporter(); const exported = await exporter.parseAsync(prototypeContext.model, { binary: true, trs: false, onlyVisible: true }); const blob = new Blob([exported], { type: "model/gltf-binary" }); const url = URL.createObjectURL(blob); const anchor = document.createElement("a"); anchor.href = url; anchor.download = "homeforge-ai-3d-prototype.glb"; anchor.click(); URL.revokeObjectURL(url); }
+
+export function focusWebGLPrototypeView(viewMode = "exterior") {
+  setPrototypeView(viewMode);
 }
