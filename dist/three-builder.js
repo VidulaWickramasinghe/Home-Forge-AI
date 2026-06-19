@@ -9,8 +9,8 @@ let activeViewMode = "exterior";
 const HERO_DESIGN = {
   land: { area: 600, shape: "rectangular", hasGarden: true, hasPool: true, hasDriveway: true },
   building: { stories: 2, basementLevels: 1, shape: "modern-box", garage: "double", roofStyle: "gable", wallColor: "#e5e7eb", roofColor: "#111827" },
-  exterior: { windowStyle: "wide", doorStyle: "timber", hasSolar: true, hasBalcony: true, hasOutdoorArea: true },
-  interior: { bedrooms: 4, bathrooms: 3, furnishingStyle: "modern" },
+  exterior: { windowStyle: "wide", doorStyle: "timber", hasSolar: true, hasBalcony: true, hasOutdoorArea: true, hasCctv: true, hasFence: true, hasGate: true },
+  interior: { bedrooms: 4, bathrooms: 3, furnishingStyle: "modern", hasLivingRoom: true, hasKitchen: true, hasOffice: true, hasBabyRoom: true, hasLaundry: true, hasMiniGym: true, hasMiniBar: true, hasFishTank: true },
   estimate: { areaM2: 462, costAUD: 956600 }
 };
 
@@ -105,10 +105,13 @@ function dims(design) {
 function createMaterials(design) {
   return {
     land: material(0x123331, { roughness: 0.72 }), lawn: material(0x22c55e, { roughness: 0.82 }), driveway: material(0x94a3b8, { roughness: 0.6 }),
-    wall: material(design.building?.wallColor || "#e5e7eb", { roughness: 0.36 }), roof: material(design.building?.roofColor || "#111827", { roughness: 0.3, metalness: 0.16 }),
+    wall: material(design.building?.wallColor || "#e5e7eb", { roughness: 0.36 }),
+    roof: material(design.building?.roofColor || "#111827", { roughness: 0.3, metalness: 0.16, emissive: new THREE.Color(design.building?.roofColor || "#111827"), emissiveIntensity: 0.12 }),
+    roofHighlight: material(0x67e8f9, { roughness: 0.2, metalness: 0.25, emissive: 0x22d3ee, emissiveIntensity: 0.5 }),
     glass: physical(0x67e8f9, { roughness: 0.04, transmission: 0.25, transparent: true, opacity: 0.72, emissive: 0x0284c7, emissiveIntensity: 0.22 }),
     pool: physical(0x22d3ee, { roughness: 0.02, transmission: 0.35, transparent: true, opacity: 0.78, emissive: 0x0891b2, emissiveIntensity: 0.28 }),
     timber: material(0x92400e, { roughness: 0.48 }), garage: material(0xf1f5f9, { roughness: 0.4 }), trim: material(0xffffff, { roughness: 0.28 }), solar: material(0x075985, { roughness: 0.18, metalness: 0.48, emissive: 0x0ea5e9, emissiveIntensity: 0.14 }),
+    cctv: material(0x020617, { roughness: 0.28, metalness: 0.35 }), fence: material(0x334155, { roughness: 0.5, metalness: 0.18 }), gym: material(0xef4444, { roughness: 0.42 }), bar: material(0xa16207, { roughness: 0.44 }), baby: material(0xf9a8d4, { roughness: 0.5 }), laundry: material(0x93c5fd, { roughness: 0.45 }),
     basement: material(0x312e81, { roughness: 0.55, emissive: 0x1e1b4b, emissiveIntensity: 0.15 }),
     basementFloor: material(0x1e293b, { roughness: 0.62, emissive: 0x0f172a, emissiveIntensity: 0.12 }),
     basementGlass: physical(0x38bdf8, { roughness: 0.08, transmission: 0.18, transparent: true, opacity: 0.5, emissive: 0x0284c7, emissiveIntensity: 0.25 }),
@@ -144,6 +147,17 @@ function createLandElements(design, mats) {
   if (design.land?.hasPool) g.add(box("Swimming Pool", 1.65, 0.08, 0.82, mats.pool, landWidth * 0.26, 0.08, -landDepth * 0.31));
   if (design.exterior?.hasOutdoorArea) g.add(box("Outdoor Timber Deck", 1.75, 0.06, 0.95, mats.timber, -landWidth * 0.2, 0.08, landDepth * 0.23));
   if (design.land?.shape === "corner") g.add(box("Corner Site Marker", 1.0, 0.07, 1.0, mats.driveway, -landWidth * 0.42, 0.07, landDepth * 0.38));
+  if (design.exterior?.hasFence) {
+    g.add(box("Front Fence", landWidth * 0.82, 0.32, 0.045, mats.fence, -landWidth * 0.04, 0.18, landDepth / 2 - 0.08));
+    g.add(box("Rear Fence", landWidth * 0.9, 0.26, 0.045, mats.fence, 0, 0.15, -landDepth / 2 + 0.08));
+    g.add(box("Left Fence", 0.045, 0.26, landDepth * 0.86, mats.fence, -landWidth / 2 + 0.08, 0.15, 0));
+    g.add(box("Right Fence", 0.045, 0.26, landDepth * 0.86, mats.fence, landWidth / 2 - 0.08, 0.15, 0));
+  }
+  if (design.exterior?.hasGate) {
+    g.add(box("Driveway Gate Left", 0.46, 0.42, 0.055, mats.roofHighlight, landWidth * 0.2, 0.23, landDepth / 2 - 0.04));
+    g.add(box("Driveway Gate Right", 0.46, 0.42, 0.055, mats.roofHighlight, landWidth * 0.36, 0.23, landDepth / 2 - 0.04));
+  }
+  if (design.interior?.hasFishTank) g.add(box("Outdoor Fish Tank Water Feature", 0.7, 0.3, 0.22, mats.glass, -landWidth * 0.34, 0.2, landDepth * 0.18));
   return g;
 }
 function addWindows(group, design, width, depth, floor, floorHeight, mats) {
@@ -162,11 +176,10 @@ function createUndergroundReveal(design, width, depth, mats, options = {}) {
 
   const levelHeight = options.compact ? 0.34 : 0.46;
   const wallThickness = options.compact ? 0.035 : 0.055;
-  const { landDepth } = dims(design);
   const basementWidth = width * 0.92;
-  const basementDepth = Math.max(depth * 0.68, options.compact ? 0.95 : 1.28);
-  const frontFaceZ = landDepth / 2 + 0.08;
-  const centerZ = frontFaceZ - basementDepth / 2;
+  const basementDepth = Math.max(depth * 0.82, options.compact ? 0.95 : 1.28);
+  const centerZ = 0;
+  const frontFaceZ = basementDepth / 2 + 0.03;
   const totalDepth = basementDepth + 0.3;
   const totalHeight = levels * levelHeight + 0.18;
 
@@ -308,19 +321,56 @@ function createExteriorModel(design, mats, options = {}) {
   if (design.building?.garage !== "none") { const gw = { single: 0.9, double: 1.3, triple: 1.7 }[design.building?.garage] || 1.3; g.add(box("Garage", gw, 0.72, 0.9, mats.garage, w / 2 + gw / 2 - 0.05, 0.36, d * 0.08)); }
   if (design.exterior?.hasBalcony && stories > 1) g.add(box("Glass Balcony", 1.45, 0.11, 0.34, mats.glass, -w * 0.18, floorHeight + 0.02, d / 2 + 0.25));
   g.add(createRoofMesh(design, w, d, stories * floorHeight + 0.04, mats));
+  g.add(box("Roof Colour Highlight Ridge", w * 0.62, 0.035, 0.05, mats.roofHighlight, 0, stories * floorHeight + 0.92, d * 0.02));
+  if (design.exterior?.hasCctv) {
+    [[-w / 2 - 0.04, d / 2 + 0.04], [w / 2 + 0.04, d / 2 + 0.04], [w / 2 + 0.04, -d / 2 - 0.04]].forEach(([x, z], index) => {
+      const camera = box(`CCTV Camera ${index + 1}`, 0.12, 0.08, 0.18, mats.cctv, x, stories * floorHeight - 0.12, z);
+      camera.rotation.y = index === 0 ? -0.6 : 0.6;
+      g.add(camera);
+    });
+  }
   if (design.exterior?.hasSolar) { g.add(box("Solar Panel 1", 0.55, 0.035, 0.28, mats.solar, -0.38, stories * floorHeight + 0.58, 0.18)); g.add(box("Solar Panel 2", 0.55, 0.035, 0.28, mats.solar, 0.26, stories * floorHeight + 0.58, 0.18)); }
   g.position.set(-0.25, 0.04, 0.08); return g;
 }
 function createInteriorModel(design, mats) {
-  const { houseWidth: w, houseDepth: d } = dims(design); const g = new THREE.Group();
+  const { houseWidth: w, houseDepth: d } = dims(design);
+  const g = new THREE.Group();
   g.add(createLandElements({ ...design, land: { ...design.land, hasPool: false, hasGarden: false } }, mats));
-  const house = new THREE.Group(); house.position.set(-0.25, 0.08, 0.08);
-  [["Living Room",mats.zoneLiving,-w/4,d/4],["Kitchen",mats.zoneKitchen,w/4,d/4],["Bedroom",mats.zoneBedroom,-w/4,-d/4],["Bathroom",mats.zoneBath,w/4,-d/4]].forEach(([n,m,x,z]) => house.add(box(n, w/2-0.04, 0.06, d/2-0.04, m, x, 0.03, z)));
-  house.add(box("Rear Wall", w, 0.72, 0.08, mats.wall, 0, 0.39, -d/2)); house.add(box("Left Wall", 0.08, 0.72, d, mats.wall, -w/2, 0.39, 0)); house.add(box("Right Wall", 0.08, 0.72, d, mats.wall, w/2, 0.39, 0));
-  house.add(box("Centre Partition", w, 0.42, 0.04, mats.partition, 0, 0.24, 0)); house.add(box("Cross Partition", 0.04, 0.42, d, mats.partition, 0, 0.24, 0));
-  house.add(box("Sofa", 0.75, 0.22, 0.32, mats.timber, -w*0.28, 0.17, d*0.28)); house.add(box("Kitchen Island", 0.72, 0.28, 0.3, mats.garage, w*0.25, 0.2, d*0.25)); house.add(box("Bed", 0.78, 0.2, 0.55, mats.timber, -w*0.25, 0.16, -d*0.25)); house.add(box("Bathroom Fixtures", 0.48, 0.25, 0.42, mats.glass, w*0.25, 0.18, -d*0.25));
-  g.add(house); return g;
+  const house = new THREE.Group();
+  house.position.set(-0.25, 0.08, 0.08);
+
+  const roomZones = [
+    ["Living Room", mats.zoneLiving, -w * 0.27, d * 0.25, w * 0.46, d * 0.42],
+    ["Kitchen", mats.zoneKitchen, w * 0.27, d * 0.25, w * 0.46, d * 0.42],
+    ["Main Bedroom", mats.zoneBedroom, -w * 0.27, -d * 0.25, w * 0.46, d * 0.42],
+    ["Bathroom", mats.zoneBath, w * 0.27, -d * 0.25, w * 0.46, d * 0.42]
+  ];
+  if (design.interior?.hasOffice) roomZones.push(["Office Room", mats.partition, -w * 0.48, 0, w * 0.22, d * 0.34]);
+  if (design.interior?.hasBabyRoom) roomZones.push(["Baby Room", mats.baby, w * 0.48, -d * 0.03, w * 0.22, d * 0.34]);
+  if (design.interior?.hasLaundry) roomZones.push(["Laundry Room", mats.laundry, w * 0.48, -d * 0.36, w * 0.22, d * 0.22]);
+  if (design.interior?.hasMiniGym) roomZones.push(["Mini Gym", mats.gym, -w * 0.48, -d * 0.36, w * 0.22, d * 0.22]);
+  if (design.interior?.hasMiniBar) roomZones.push(["Mini Bar", mats.bar, w * 0.03, d * 0.47, w * 0.28, d * 0.14]);
+
+  roomZones.forEach(([name, mat, x, z, rw, rd]) => house.add(box(name, rw, 0.06, rd, mat, x, 0.03, z)));
+  house.add(box("Rear Wall", w, 0.72, 0.08, mats.wall, 0, 0.39, -d/2));
+  house.add(box("Left Wall", 0.08, 0.72, d, mats.wall, -w/2, 0.39, 0));
+  house.add(box("Right Wall", 0.08, 0.72, d, mats.wall, w/2, 0.39, 0));
+  house.add(box("Centre Partition", w, 0.42, 0.04, mats.partition, 0, 0.24, 0));
+  house.add(box("Cross Partition", 0.04, 0.42, d, mats.partition, 0, 0.24, 0));
+  house.add(box("Sofa", 0.75, 0.22, 0.32, mats.timber, -w*0.28, 0.17, d*0.28));
+  house.add(box("Kitchen Island", 0.72, 0.28, 0.3, mats.garage, w*0.25, 0.2, d*0.25));
+  house.add(box("Bed", 0.78, 0.2, 0.55, mats.timber, -w*0.25, 0.16, -d*0.25));
+  house.add(box("Bathroom Fixtures", 0.48, 0.25, 0.42, mats.glass, w*0.25, 0.18, -d*0.25));
+  if (design.interior?.hasOffice) house.add(box("Office Desk", 0.38, 0.2, 0.2, mats.timber, -w*0.48, 0.17, 0));
+  if (design.interior?.hasBabyRoom) house.add(box("Baby Cot", 0.36, 0.18, 0.24, mats.baby, w*0.48, 0.16, -d*0.03));
+  if (design.interior?.hasLaundry) house.add(box("Laundry Appliances", 0.34, 0.32, 0.18, mats.laundry, w*0.48, 0.2, -d*0.36));
+  if (design.interior?.hasMiniGym) house.add(box("Gym Bench", 0.44, 0.16, 0.18, mats.gym, -w*0.48, 0.14, -d*0.36));
+  if (design.interior?.hasMiniBar) house.add(box("Mini Bar Counter", 0.62, 0.24, 0.16, mats.bar, w*0.03, 0.18, d*0.47));
+  if (design.interior?.hasFishTank) house.add(box("Interior Fish Tank", 0.52, 0.32, 0.08, mats.glass, 0, 0.25, -d * 0.5 + 0.08));
+  g.add(house);
+  return g;
 }
+
 function createHouseModel(design, options = {}) {
   return createHousePrototypeModel(design, options);
 }
@@ -332,9 +382,9 @@ function createHousePrototypeModel(design, options = {}) {
 function disposeObject(object) { object.traverse((child) => { if (child.geometry) child.geometry.dispose(); if (child.material) Array.isArray(child.material) ? child.material.forEach((m) => m.dispose()) : child.material.dispose(); }); }
 function setContextModel(context, model) { if (!context) return; if (context.model) { context.scene.remove(context.model); disposeObject(context.model); } context.model = model; context.scene.add(model); }
 function applyCameraPreset(context, viewMode) { if (!context) return; const presets = { exterior: [[6.5,4.8,7.2],[0,0.8,0]], interior: [[4.4,3.2,4.8],[0,0.7,0]], land: [[5.8,6.8,7.8],[0,0,0]] }; const [pos, target] = presets[viewMode] || presets.exterior; context.camera.position.set(...pos); if (context.controls) { context.controls.target.set(...target); context.controls.update(); } }
-function animateContext(context, options = {}) { function loop() { context.animationId = requestAnimationFrame(loop); if (options.autoRotate && context.model) context.model.rotation.y += 0.0035; context.controls?.update(); context.renderer.render(context.scene, context.camera); } loop(); }
+function animateContext(context, options = {}) { function loop() { context.animationId = requestAnimationFrame(loop); if (options.autoRotate && context.model) context.model.rotation.y += options.rotationSpeed ?? 0.0016; context.controls?.update(); context.renderer.render(context.scene, context.camera); } loop(); }
 
-export function initHeroWebGL() { const mount = document.getElementById("heroWebGL"); if (!mount || heroContext) return; try { heroContext = createThreeContext(mount, { controls: false, cameraPosition: [4.8, 3.25, 5.35], cameraTarget: [0, 0.85, 0] }); setContextModel(heroContext, createHousePrototypeModel(HERO_DESIGN, { hero: true, compact: true, viewMode: "exterior" })); animateContext(heroContext, { autoRotate: true }); } catch (error) { console.error("Hero WebGL failed to initialize:", error); } }
+export function initHeroWebGL() { const mount = document.getElementById("heroWebGL"); if (!mount || heroContext) return; try { heroContext = createThreeContext(mount, { controls: true, cameraPosition: [4.8, 3.25, 5.35], cameraTarget: [0, 0.85, 0] }); setContextModel(heroContext, createHousePrototypeModel(HERO_DESIGN, { hero: true, compact: true, viewMode: "exterior" })); animateContext(heroContext, { autoRotate: true, rotationSpeed: 0.0012 }); } catch (error) { console.error("Hero WebGL failed to initialize:", error); } }
 export function initWebGLPrototypeBuilder(houseDesign) { const mount = document.getElementById("prototypeWebGL"); if (!mount || prototypeContext) return; try { prototypeContext = createThreeContext(mount, { controls: true, cameraPosition: [6.5, 4.8, 7.2], cameraTarget: [0, 0.8, 0] }); document.getElementById("prototypeScene")?.classList.add("webgl-active"); updateWebGLPrototype(houseDesign, activeViewMode); animateContext(prototypeContext); } catch (error) { console.error("WebGL prototype failed to initialize:", error); } }
 export function updateWebGLPrototype(houseDesign, viewMode = "exterior") { if (!prototypeContext) return; activeViewMode = viewMode; setContextModel(prototypeContext, createHousePrototypeModel(houseDesign, { viewMode })); applyCameraPreset(prototypeContext, viewMode); }
 export function setPrototypeView(viewMode = "exterior") { activeViewMode = viewMode; applyCameraPreset(prototypeContext, viewMode); }
