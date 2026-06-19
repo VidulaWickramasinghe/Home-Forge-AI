@@ -8,7 +8,7 @@ let activeViewMode = "exterior";
 
 const HERO_DESIGN = {
   land: { area: 600, shape: "rectangular", hasGarden: true, hasPool: true, hasDriveway: true },
-  building: { stories: 2, basementLevels: 0, shape: "modern-box", garage: "double", roofStyle: "gable", wallColor: "#e5e7eb", roofColor: "#111827" },
+  building: { stories: 2, basementLevels: 1, shape: "modern-box", garage: "double", roofStyle: "gable", wallColor: "#e5e7eb", roofColor: "#111827" },
   exterior: { windowStyle: "wide", doorStyle: "timber", hasSolar: true, hasBalcony: true, hasOutdoorArea: true },
   interior: { bedrooms: 4, bathrooms: 3, furnishingStyle: "modern" },
   estimate: { areaM2: 462, costAUD: 956600 }
@@ -109,7 +109,10 @@ function createMaterials(design) {
     glass: physical(0x67e8f9, { roughness: 0.04, transmission: 0.25, transparent: true, opacity: 0.72, emissive: 0x0284c7, emissiveIntensity: 0.22 }),
     pool: physical(0x22d3ee, { roughness: 0.02, transmission: 0.35, transparent: true, opacity: 0.78, emissive: 0x0891b2, emissiveIntensity: 0.28 }),
     timber: material(0x92400e, { roughness: 0.48 }), garage: material(0xf1f5f9, { roughness: 0.4 }), trim: material(0xffffff, { roughness: 0.28 }), solar: material(0x075985, { roughness: 0.18, metalness: 0.48, emissive: 0x0ea5e9, emissiveIntensity: 0.14 }),
-    basement: material(0x312e81, { roughness: 0.55, emissive: 0x1e1b4b, emissiveIntensity: 0.15 }), partition: material(0xcbd5e1, { roughness: 0.52 }),
+    basement: material(0x312e81, { roughness: 0.55, emissive: 0x1e1b4b, emissiveIntensity: 0.15 }),
+    basementGlass: physical(0x38bdf8, { roughness: 0.08, transmission: 0.18, transparent: true, opacity: 0.5, emissive: 0x0284c7, emissiveIntensity: 0.25 }),
+    excavation: material(0x020617, { roughness: 0.85, emissive: 0x0f172a, emissiveIntensity: 0.2 }),
+    partition: material(0xcbd5e1, { roughness: 0.52 }),
     zoneLiving: material(0xdbeafe, { roughness: 0.55 }), zoneKitchen: material(0xecfeff, { roughness: 0.55 }), zoneBedroom: material(0xfef3c7, { roughness: 0.55 }), zoneBath: material(0xe0f2fe, { roughness: 0.55 })
   };
 }
@@ -149,11 +152,98 @@ function addWindows(group, design, width, depth, floor, floorHeight, mats) {
   [-0.25, 0.25].forEach((p, i) => group.add(box(`Window ${floor + 1}-${i + 1}`, size[0], size[1], 0.04, mats.glass, width * p, y, depth / 2 + 0.025)));
   group.add(box(`Side Window ${floor + 1}`, 0.04, size[1], size[0], mats.glass, width / 2 + 0.025, y, -depth * 0.12));
 }
+
+function createUndergroundReveal(design, width, depth, mats, options = {}) {
+  const levels = Math.max(0, Math.min(Number(design.building?.basementLevels) || 0, 2));
+  const group = new THREE.Group();
+  group.name = "Visible Underground Floor Reveal";
+  if (!levels) return group;
+
+  const levelHeight = options.compact ? 0.34 : 0.46;
+  const revealDepth = options.compact ? 0.16 : 0.22;
+  const { landDepth } = dims(design);
+  const frontZ = landDepth / 2 + revealDepth / 2 + 0.05;
+  const pitWidth = width * 0.92;
+
+  group.add(box(
+    "Excavated Basement Opening",
+    pitWidth + 0.26,
+    0.035,
+    revealDepth + 0.18,
+    mats.excavation,
+    0,
+    -0.025,
+    frontZ
+  ));
+
+  for (let index = 0; index < levels; index += 1) {
+    const y = -levelHeight * (index + 0.5) - 0.04;
+    const level = box(
+      `Underground Floor ${index + 1}`,
+      pitWidth,
+      levelHeight * 0.86,
+      revealDepth,
+      mats.basement,
+      0,
+      y,
+      frontZ
+    );
+    const glazing = box(
+      `Underground Floor ${index + 1} Lightwell Glass`,
+      pitWidth * 0.22,
+      levelHeight * 0.34,
+      0.025,
+      mats.basementGlass,
+      -pitWidth * 0.25,
+      y + levelHeight * 0.08,
+      frontZ + revealDepth / 2 + 0.018
+    );
+    const secondGlazing = glazing.clone();
+    secondGlazing.name = `Underground Floor ${index + 1} Second Lightwell Glass`;
+    secondGlazing.position.x = pitWidth * 0.25;
+
+    const slabLine = box(
+      `Underground Floor ${index + 1} Slab Edge`,
+      pitWidth + 0.1,
+      0.028,
+      revealDepth + 0.035,
+      mats.trim,
+      0,
+      y + levelHeight * 0.45,
+      frontZ
+    );
+    group.add(level, glazing, secondGlazing, slabLine);
+  }
+
+  group.add(box(
+    "Basement Retaining Wall Left",
+    0.06,
+    levelHeight * levels + 0.12,
+    revealDepth + 0.12,
+    mats.garage,
+    -pitWidth / 2 - 0.06,
+    -(levelHeight * levels) / 2 - 0.04,
+    frontZ
+  ));
+  group.add(box(
+    "Basement Retaining Wall Right",
+    0.06,
+    levelHeight * levels + 0.12,
+    revealDepth + 0.12,
+    mats.garage,
+    pitWidth / 2 + 0.06,
+    -(levelHeight * levels) / 2 - 0.04,
+    frontZ
+  ));
+
+  return group;
+}
+
 function createExteriorModel(design, mats, options = {}) {
   const { houseWidth: w, houseDepth: d } = dims(design); const g = new THREE.Group(); const floorHeight = options.compact ? 0.74 : 1.05; const stories = Math.max(1, Math.min(Number(design.building?.stories) || 1, 4));
   for (let i = 0; i < stories; i++) { g.add(box(`Floor ${i + 1}`, w, floorHeight, d, mats.wall, 0, floorHeight / 2 + i * floorHeight, 0)); addWindows(g, design, w, d, i, floorHeight, mats); }
   if (design.building?.shape === "l-shape") g.add(box("L Shape Wing", w * 0.34, floorHeight, d * 0.82, mats.wall, -w * 0.55, floorHeight / 2, -d * 0.18));
-  if ((design.building?.basementLevels || 0) > 0) g.add(box("Basement Levels", w * 0.86, 0.42 * design.building.basementLevels, d * 0.82, mats.basement, 0, -0.21 * design.building.basementLevels, 0));
+  g.add(createUndergroundReveal(design, w, d, mats, options));
   const doorMat = design.exterior?.doorStyle === "black" ? material(0x020617) : design.exterior?.doorStyle === "glass" ? mats.glass : mats.timber;
   g.add(box("Entry Door", design.exterior?.doorStyle === "wide" ? 0.68 : 0.44, 0.78, 0.05, doorMat, -w * 0.34, 0.39, d / 2 + 0.035));
   if (design.building?.garage !== "none") { const gw = { single: 0.9, double: 1.3, triple: 1.7 }[design.building?.garage] || 1.3; g.add(box("Garage", gw, 0.72, 0.9, mats.garage, w / 2 + gw / 2 - 0.05, 0.36, d * 0.08)); }
