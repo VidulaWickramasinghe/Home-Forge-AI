@@ -69,6 +69,14 @@ const controls = {
   furnishing: document.getElementById("furnishing")
 };
 let activePrototypeView = "exterior";
+let webGLPrototypeStarted = false;
+let heroWebGLStarted = false;
+
+const MOBILE_WEBGL_BREAKPOINT = 768;
+
+function isMobileWebGLFallback() {
+  return window.innerWidth < MOBILE_WEBGL_BREAKPOINT;
+}
 
 const output = {
   storiesValue: document.getElementById("storiesValue"),
@@ -392,7 +400,9 @@ function render() {
   applyFeatures();
   updateSummary();
   const houseDesign = mapStateToHouseDesign(state);
-  updateWebGLPrototype(houseDesign, activePrototypeView);
+  if (!isMobileWebGLFallback() && webGLPrototypeStarted) {
+    updateWebGLPrototype(houseDesign, activePrototypeView);
+  }
 }
 function syncStateFromControls() {
   state.landArea = Number(controls.landArea.value);
@@ -553,9 +563,11 @@ function handleViewTabs() {
       model.prototypeScene.dataset.view = activePrototypeView;
       setCameraPreset(activePrototypeView);
       const houseDesign = mapStateToHouseDesign(state);
-      setPrototypeView(activePrototypeView);
-      // focusWebGLPrototypeView was replaced by setPrototypeView for the nested WebGL schema.
-      updateWebGLPrototype(houseDesign, activePrototypeView);
+      if (!isMobileWebGLFallback() && webGLPrototypeStarted) {
+        setPrototypeView(activePrototypeView);
+        // focusWebGLPrototypeView was replaced by setPrototypeView for the nested WebGL schema.
+        updateWebGLPrototype(houseDesign, activePrototypeView);
+      }
     });
   });
 }
@@ -727,6 +739,47 @@ function generateAiPrototype() {
   `;
   showTemporaryMessage("AI prototype direction generated.");
 }
+function applyResponsivePrototypeMode() {
+  const useFallback = isMobileWebGLFallback();
+  const heroScene = document.querySelector(".webgl-hero-scene");
+
+  model.prototypeScene?.classList.toggle("mobile-fallback", useFallback);
+  heroScene?.classList.toggle("mobile-fallback", useFallback);
+
+  if (useFallback) {
+    model.prototypeScene?.classList.remove("webgl-active");
+    return;
+  }
+
+  const houseDesign = mapStateToHouseDesign(state);
+
+  if (!heroWebGLStarted) {
+    initHeroWebGL();
+    heroWebGLStarted = true;
+  }
+
+  if (!webGLPrototypeStarted) {
+    initWebGLPrototypeBuilder(houseDesign);
+    webGLPrototypeStarted = true;
+  } else {
+    model.prototypeScene?.classList.add("webgl-active");
+    updateWebGLPrototype(houseDesign, activePrototypeView);
+  }
+
+  setPrototypeView(activePrototypeView);
+}
+
+function handleResponsivePrototypeResize() {
+  let resizeTimer;
+  window.addEventListener("resize", () => {
+    window.clearTimeout(resizeTimer);
+    resizeTimer = window.setTimeout(() => {
+      applyResponsivePrototypeMode();
+      render();
+    }, 180);
+  });
+}
+
 function setupEventListeners() {
   Object.values(controls).forEach((control) => {
     control.addEventListener("input", syncStateFromControls);
@@ -740,10 +793,8 @@ function setupEventListeners() {
   document
     .getElementById("exportGlbBtn")
     ?.addEventListener("click", exportPrototypeGLB);
-  const initialHouseDesign = mapStateToHouseDesign(state);
-  initHeroWebGL();
-  initWebGLPrototypeBuilder(initialHouseDesign);
-  setPrototypeView(activePrototypeView);
+  applyResponsivePrototypeMode();
+  handleResponsivePrototypeResize();
   handleViewTabs();
   setupPrototypeOrbit();
   setupPhotoUpload();
