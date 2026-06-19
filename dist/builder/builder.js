@@ -1,217 +1,471 @@
-const STORAGE_KEY = 'homeforge-builder-v1';
-const GRID = 20;
+const GRID_SIZE = 20;
+const PIXELS_PER_METER = 20;
+const COST_PER_SQM = 1500;
+const COST_PER_WALL_METER = 800;
+const STORAGE_KEY = 'homeforge-advanced-builder-v1';
+
+const INITIAL_WALLS = [
+  { id: 'w1', x1: 200, y1: 200, x2: 600, y2: 200 },
+  { id: 'w2', x1: 600, y1: 200, x2: 600, y2: 500 },
+  { id: 'w3', x1: 600, y1: 500, x2: 200, y2: 500 },
+  { id: 'w4', x1: 200, y1: 500, x2: 200, y2: 200 },
+  { id: 'w5', x1: 400, y1: 200, x2: 400, y2: 500 },
+  { id: 'w6', x1: 200, y1: 350, x2: 400, y2: 350 },
+  { id: 'w7', x1: 400, y1: 300, x2: 600, y2: 300 },
+  { id: 'w8', x1: 400, y1: 400, x2: 600, y2: 400 },
+];
+
+const INITIAL_ROOMS = [
+  { id: 'r1', x: 200, y: 200, w: 200, h: 150, type: 'Living' },
+  { id: 'r2', x: 200, y: 350, w: 200, h: 150, type: 'Kitchen' },
+  { id: 'r3', x: 400, y: 200, w: 200, h: 100, type: 'Bedroom' },
+  { id: 'r4', x: 400, y: 300, w: 200, h: 100, type: 'Bath' },
+  { id: 'r5', x: 400, y: 400, w: 200, h: 100, type: 'Bedroom' },
+];
+
+const INITIAL_DOORS = [
+  { id: 'd1', x: 300, y: 350, angle: 0 },
+  { id: 'd2', x: 400, y: 250, angle: 90 },
+  { id: 'd3', x: 400, y: 350, angle: 90 },
+  { id: 'd4', x: 400, y: 450, angle: 90 },
+  { id: 'd5', x: 200, y: 275, angle: 90 },
+];
+
+const INITIAL_WINDOWS = [
+  { id: 'win1', x: 300, y: 200, angle: 0 },
+  { id: 'win2', x: 500, y: 200, angle: 0 },
+  { id: 'win3', x: 600, y: 250, angle: 90 },
+  { id: 'win4', x: 600, y: 450, angle: 90 },
+];
+
 const materialColors = {
-  concrete: '#e5e7eb',
+  render: '#f8fafc',
   brick: '#b45309',
   timber: '#a16207',
-  render: '#f8fafc',
+  concrete: '#94a3b8',
+};
+
+const roomColors = {
+  Living: 'rgba(212, 212, 216, 0.24)',
+  Kitchen: 'rgba(226, 232, 240, 0.26)',
+  Bedroom: 'rgba(199, 210, 254, 0.28)',
+  Bath: 'rgba(165, 243, 252, 0.28)',
+  Office: 'rgba(253, 230, 138, 0.24)',
 };
 
 const state = {
-  activeTool: 'wall',
-  walls: [],
-  markers: [],
-  pendingPoint: null,
-  material: 'concrete',
-  rate: 155,
-  wallHeight: 2.7,
+  activeTool: 'Select',
+  subTool: 'Living',
+  material: 'render',
+  isNight: false,
+  showFeatures: true,
+  isDrawing: false,
+  currentWall: null,
+  currentRoom: null,
+  walls: structuredClone(INITIAL_WALLS),
+  rooms: structuredClone(INITIAL_ROOMS),
+  doors: structuredClone(INITIAL_DOORS),
+  windows: structuredClone(INITIAL_WINDOWS),
+  history: [],
 };
 
-const planCanvas = document.querySelector('#planCanvas');
+const svg = document.querySelector('#planCanvas');
+const roomsLayer = document.querySelector('#roomsLayer');
 const wallsLayer = document.querySelector('#wallsLayer');
-const pointsLayer = document.querySelector('#pointsLayer');
+const featuresLayer = document.querySelector('#featuresLayer');
+const draftLayer = document.querySelector('#draftLayer');
 const model3d = document.querySelector('#model3d');
-const materialSelect = document.querySelector('#materialSelect');
-const wallHeight = document.querySelector('#wallHeight');
-const wallHeightLabel = document.querySelector('#wallHeightLabel');
-const activeToolLabel = document.querySelector('#activeToolLabel');
-const saveStatus = document.querySelector('#saveStatus');
+const viewport = document.querySelector('#threeLiteViewport');
 
 function snap(value) {
-  return Math.round(value / GRID) * GRID;
+  return Math.round(value / GRID_SIZE) * GRID_SIZE;
 }
 
-function getSvgPoint(event) {
-  const rect = planCanvas.getBoundingClientRect();
-  const x = ((event.clientX - rect.left) / rect.width) * 720;
-  const y = ((event.clientY - rect.top) / rect.height) * 520;
-  return { x: snap(x), y: snap(y) };
+function id(prefix) {
+  return `${prefix}-${Date.now()}-${Math.round(Math.random() * 999)}`;
 }
 
-function wallLength(wall) {
-  return Math.hypot(wall.x2 - wall.x1, wall.y2 - wall.y1) / 20;
+function captureHistory() {
+  state.history.push(JSON.stringify({
+    walls: state.walls,
+    rooms: state.rooms,
+    doors: state.doors,
+    windows: state.windows,
+  }));
+  if (state.history.length > 30) state.history.shift();
 }
 
-function renderPlan() {
+function getPoint(event) {
+  const rect = svg.getBoundingClientRect();
+  const x = snap(((event.clientX - rect.left) / rect.width) * 820);
+  const y = snap(((event.clientY - rect.top) / rect.height) * 620);
+  return { x, y };
+}
+
+function metersFromPixels(value) {
+  return value / PIXELS_PER_METER;
+}
+
+function lineLength(wall) {
+  return metersFromPixels(Math.hypot(wall.x2 - wall.x1, wall.y2 - wall.y1));
+}
+
+function roomArea(room) {
+  return metersFromPixels(room.w) * metersFromPixels(room.h);
+}
+
+function setStatus(text) {
+  document.querySelector('#saveStatus').textContent = text;
+}
+
+function svgElement(type, attributes = {}) {
+  const element = document.createElementNS('http://www.w3.org/2000/svg', type);
+  Object.entries(attributes).forEach(([key, value]) => element.setAttribute(key, value));
+  return element;
+}
+
+function renderRooms() {
+  roomsLayer.innerHTML = '';
+  state.rooms.forEach((room) => {
+    roomsLayer.append(svgElement('rect', {
+      x: room.x,
+      y: room.y,
+      width: room.w,
+      height: room.h,
+      class: 'room-fill',
+      fill: roomColors[room.type] || roomColors.Living,
+    }));
+    const label = svgElement('text', {
+      x: room.x + 12,
+      y: room.y + 24,
+      class: 'room-label',
+    });
+    label.textContent = `${room.type} · ${Math.round(roomArea(room))}m²`;
+    roomsLayer.append(label);
+  });
+}
+
+function renderWalls() {
   wallsLayer.innerHTML = '';
-  pointsLayer.innerHTML = '';
-
   state.walls.forEach((wall) => {
-    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('x1', wall.x1);
-    line.setAttribute('y1', wall.y1);
-    line.setAttribute('x2', wall.x2);
-    line.setAttribute('y2', wall.y2);
-    line.setAttribute('class', 'wall-line');
-    wallsLayer.append(line);
+    wallsLayer.append(svgElement('line', {
+      x1: wall.x1,
+      y1: wall.y1,
+      x2: wall.x2,
+      y2: wall.y2,
+      class: 'wall-line',
+    }));
   });
+}
 
-  state.markers.forEach((marker) => {
-    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('x1', marker.x - 12);
-    line.setAttribute('y1', marker.y);
-    line.setAttribute('x2', marker.x + 12);
-    line.setAttribute('y2', marker.y);
-    line.setAttribute('class', `wall-line marker-${marker.type}`);
-    wallsLayer.append(line);
+function renderFeatures() {
+  featuresLayer.innerHTML = '';
+  state.doors.forEach((door) => {
+    featuresLayer.append(svgElement('path', {
+      d: `M ${door.x - 16} ${door.y} L ${door.x + 16} ${door.y} Q ${door.x + 16} ${door.y - 26} ${door.x - 8} ${door.y - 26}`,
+      class: 'door-symbol',
+      transform: `rotate(${door.angle} ${door.x} ${door.y})`,
+    }));
   });
+  state.windows.forEach((windowItem) => {
+    featuresLayer.append(svgElement('line', {
+      x1: windowItem.x - 18,
+      y1: windowItem.y,
+      x2: windowItem.x + 18,
+      y2: windowItem.y,
+      class: 'window-symbol',
+      transform: `rotate(${windowItem.angle} ${windowItem.x} ${windowItem.y})`,
+    }));
+  });
+}
 
-  if (state.pendingPoint) {
-    const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    dot.setAttribute('cx', state.pendingPoint.x);
-    dot.setAttribute('cy', state.pendingPoint.y);
-    dot.setAttribute('r', '7');
-    dot.setAttribute('class', 'point-dot');
-    pointsLayer.append(dot);
+function renderDraft() {
+  draftLayer.innerHTML = '';
+  if (state.currentWall) {
+    draftLayer.append(svgElement('line', {
+      x1: state.currentWall.x1,
+      y1: state.currentWall.y1,
+      x2: state.currentWall.x2,
+      y2: state.currentWall.y2,
+      class: 'draft-line',
+    }));
   }
+  if (state.currentRoom) {
+    const room = normalizeRoom(state.currentRoom);
+    draftLayer.append(svgElement('rect', {
+      x: room.x,
+      y: room.y,
+      width: room.w,
+      height: room.h,
+      class: 'draft-room',
+    }));
+  }
+}
+
+function normalizeRoom(room) {
+  return {
+    ...room,
+    x: room.w < 0 ? room.x + room.w : room.x,
+    y: room.h < 0 ? room.y + room.h : room.y,
+    w: Math.abs(room.w),
+    h: Math.abs(room.h),
+  };
 }
 
 function renderModel() {
   model3d.innerHTML = '';
+  const scale = 0.46;
+  const offsetX = 165;
+  const offsetY = 140;
+  state.rooms.forEach((room) => {
+    const floor = document.createElement('span');
+    floor.className = 'generated-floor';
+    floor.style.left = `${room.x * scale - offsetX}px`;
+    floor.style.top = `${room.y * scale - offsetY}px`;
+    floor.style.width = `${room.w * scale}px`;
+    floor.style.height = `${room.h * scale}px`;
+    floor.style.setProperty('--floor-color', roomColors[room.type] || roomColors.Living);
+    model3d.append(floor);
+  });
   state.walls.forEach((wall) => {
-    const length = Math.max(18, Math.hypot(wall.x2 - wall.x1, wall.y2 - wall.y1) * 0.36);
+    const length = Math.max(12, Math.hypot(wall.x2 - wall.x1, wall.y2 - wall.y1) * scale);
     const angle = Math.atan2(wall.y2 - wall.y1, wall.x2 - wall.x1) * 180 / Math.PI;
     const element = document.createElement('span');
     element.className = 'generated-wall';
     element.style.width = `${length}px`;
-    element.style.left = `${wall.x1 * 0.36 - 12}px`;
-    element.style.top = `${wall.y1 * 0.34 - 28}px`;
+    element.style.left = `${wall.x1 * scale - offsetX}px`;
+    element.style.top = `${wall.y1 * scale - offsetY}px`;
     element.style.transform = `rotate(${angle}deg)`;
     element.style.setProperty('--wall-color', materialColors[state.material]);
     model3d.append(element);
   });
+  state.doors.forEach((door) => appendFeature3d(door, 'generated-door', scale, offsetX, offsetY));
+  state.windows.forEach((windowItem) => appendFeature3d(windowItem, 'generated-window', scale, offsetX, offsetY));
+}
+
+function appendFeature3d(feature, className, scale, offsetX, offsetY) {
+  const element = document.createElement('span');
+  element.className = className;
+  element.style.left = `${feature.x * scale - offsetX}px`;
+  element.style.top = `${feature.y * scale - offsetY}px`;
+  element.style.transform = `rotate(${feature.angle}deg)`;
+  model3d.append(element);
 }
 
 function renderMetrics() {
-  const totalLength = state.walls.reduce((sum, wall) => sum + wallLength(wall), 0);
-  const surface = totalLength * state.wallHeight;
-  const cost = surface * state.rate;
-  document.querySelector('#wallLength').textContent = `${totalLength.toFixed(1)} m`;
-  document.querySelector('#wallSurface').textContent = `${surface.toFixed(1)} m²`;
-  document.querySelector('#estimatedCost').textContent = `$${Math.round(cost).toLocaleString()}`;
+  const totalArea = state.rooms.reduce((sum, room) => sum + roomArea(room), 0);
+  const totalWallLength = state.walls.reduce((sum, wall) => sum + lineLength(wall), 0);
+  const estimate = totalArea * COST_PER_SQM + totalWallLength * COST_PER_WALL_METER;
+  document.querySelector('#floorArea').textContent = `${Math.round(totalArea)} m²`;
+  document.querySelector('#wallLength').textContent = `${totalWallLength.toFixed(1)} m`;
+  document.querySelector('#estimatedCost').textContent = `$${Math.round(estimate).toLocaleString()}`;
+  document.querySelector('#assetCount').textContent = `${state.rooms.length} rooms · ${state.walls.length} walls`;
 }
 
-function renderMaterial() {
-  const option = materialSelect.selectedOptions[0];
-  document.querySelector('#materialName').textContent = option.textContent.split(' — ')[0];
-  document.querySelector('#materialDetails').textContent = `${option.textContent} applied to generated wall masses.`;
+function renderUi() {
+  document.querySelector('#activeToolLabel').textContent = `Tool: ${state.activeTool}${state.activeTool === 'Room' ? ` / ${state.subTool}` : ''}`;
+  document.querySelector('#toggleLighting').textContent = state.isNight ? '☾ Night' : '☀ Day';
+  document.querySelector('#lightingLabel').textContent = state.isNight ? 'Night preview' : 'Day preview';
+  document.querySelector('#featureStatus').textContent = state.showFeatures ? 'Features on' : 'Features hidden';
+  document.querySelector('#featureList').classList.toggle('hidden', !state.showFeatures);
+  viewport.classList.toggle('night', state.isNight);
 }
 
 function renderAll() {
-  renderPlan();
+  renderRooms();
+  renderWalls();
+  renderFeatures();
+  renderDraft();
   renderModel();
   renderMetrics();
-  renderMaterial();
+  renderUi();
 }
 
-function setStatus(message) {
-  saveStatus.textContent = message;
-}
-
-planCanvas.addEventListener('click', (event) => {
-  const point = getSvgPoint(event);
-
-  if (state.activeTool === 'wall') {
-    if (!state.pendingPoint) {
-      state.pendingPoint = point;
-    } else {
-      state.walls.push({ ...state.pendingPoint, x2: point.x, y2: point.y });
-      state.pendingPoint = null;
+svg.addEventListener('pointerdown', (event) => {
+  const point = getPoint(event);
+  if (state.activeTool === 'Wall') {
+    if (!state.isDrawing) {
+      state.isDrawing = true;
+      state.currentWall = { x1: point.x, y1: point.y, x2: point.x, y2: point.y };
+    } else if (state.currentWall && (state.currentWall.x1 !== point.x || state.currentWall.y1 !== point.y)) {
+      captureHistory();
+      state.walls.push({ ...state.currentWall, x2: point.x, y2: point.y, id: id('w') });
+      state.currentWall = { x1: point.x, y1: point.y, x2: point.x, y2: point.y };
       setStatus('Unsaved changes');
     }
   }
 
-  if (state.activeTool === 'door' || state.activeTool === 'window') {
-    state.markers.push({ ...point, type: state.activeTool });
+  if (state.activeTool === 'Room') {
+    state.isDrawing = true;
+    state.currentRoom = { x: point.x, y: point.y, w: 0, h: 0, type: state.subTool };
+  }
+
+  if (state.activeTool === 'Door' || state.activeTool === 'Window') {
+    captureHistory();
+    const angle = event.shiftKey ? 90 : 0;
+    if (state.activeTool === 'Door') state.doors.push({ id: id('d'), ...point, angle });
+    if (state.activeTool === 'Window') state.windows.push({ id: id('win'), ...point, angle });
     setStatus('Unsaved changes');
   }
 
   renderAll();
 });
 
-document.querySelectorAll('.tool').forEach((button) => {
+svg.addEventListener('pointermove', (event) => {
+  if (!state.isDrawing) return;
+  const point = getPoint(event);
+  if (state.activeTool === 'Wall' && state.currentWall) {
+    state.currentWall.x2 = point.x;
+    state.currentWall.y2 = point.y;
+  }
+  if (state.activeTool === 'Room' && state.currentRoom) {
+    state.currentRoom.w = point.x - state.currentRoom.x;
+    state.currentRoom.h = point.y - state.currentRoom.y;
+  }
+  renderDraft();
+});
+
+svg.addEventListener('pointerup', () => {
+  if (state.activeTool !== 'Room' || !state.currentRoom) return;
+  const room = normalizeRoom(state.currentRoom);
+  state.isDrawing = false;
+  state.currentRoom = null;
+  if (room.w >= GRID_SIZE && room.h >= GRID_SIZE) {
+    captureHistory();
+    state.rooms.push({ ...room, id: id('r') });
+    setStatus('Unsaved changes');
+  }
+  renderAll();
+});
+
+svg.addEventListener('contextmenu', (event) => {
+  event.preventDefault();
+  state.isDrawing = false;
+  state.currentWall = null;
+  state.currentRoom = null;
+  renderAll();
+});
+
+document.querySelectorAll('[data-tool]').forEach((button) => {
   button.addEventListener('click', () => {
-    document.querySelectorAll('.tool').forEach((item) => item.classList.remove('active'));
+    document.querySelectorAll('[data-tool]').forEach((item) => item.classList.remove('active'));
     button.classList.add('active');
     state.activeTool = button.dataset.tool;
-    state.pendingPoint = null;
-    activeToolLabel.textContent = `Tool: ${button.textContent}`;
+    state.isDrawing = false;
+    state.currentWall = null;
+    state.currentRoom = null;
     renderAll();
   });
 });
 
-materialSelect.addEventListener('change', () => {
-  state.material = materialSelect.value;
-  state.rate = Number(materialSelect.selectedOptions[0].dataset.rate);
-  setStatus('Unsaved changes');
+document.querySelectorAll('[data-room]').forEach((button) => {
+  button.addEventListener('click', () => {
+    document.querySelectorAll('[data-room]').forEach((item) => item.classList.remove('active'));
+    button.classList.add('active');
+    state.subTool = button.dataset.room;
+    state.activeTool = 'Room';
+    document.querySelectorAll('[data-tool]').forEach((item) => item.classList.toggle('active', item.dataset.tool === 'Room'));
+    renderAll();
+  });
+});
+
+document.querySelectorAll('[data-material]').forEach((button) => {
+  button.addEventListener('click', () => {
+    document.querySelectorAll('[data-material]').forEach((item) => item.classList.remove('active'));
+    button.classList.add('active');
+    state.material = button.dataset.material;
+    state.activeTool = 'Material';
+    document.querySelectorAll('[data-tool]').forEach((item) => item.classList.toggle('active', item.dataset.tool === 'Material'));
+    setStatus('Unsaved changes');
+    renderAll();
+  });
+});
+
+document.querySelector('#toggleLighting').addEventListener('click', () => {
+  state.isNight = !state.isNight;
   renderAll();
 });
 
-wallHeight.addEventListener('input', () => {
-  state.wallHeight = Number(wallHeight.value);
-  wallHeightLabel.textContent = `${state.wallHeight.toFixed(1)} m`;
-  setStatus('Unsaved changes');
+document.querySelector('#toggleFeatures').addEventListener('click', () => {
+  state.showFeatures = !state.showFeatures;
+  renderAll();
+});
+
+document.querySelector('#undoAction').addEventListener('click', () => {
+  const previous = state.history.pop();
+  if (!previous) {
+    setStatus('Nothing to undo');
+    return;
+  }
+  Object.assign(state, JSON.parse(previous));
+  setStatus('Undo applied');
   renderAll();
 });
 
 document.querySelector('#clearPlan').addEventListener('click', () => {
+  captureHistory();
   state.walls = [];
-  state.markers = [];
-  state.pendingPoint = null;
-  setStatus('Unsaved changes');
+  state.rooms = [];
+  state.doors = [];
+  state.windows = [];
+  state.isDrawing = false;
+  state.currentWall = null;
+  state.currentRoom = null;
+  setStatus('Plan cleared');
   renderAll();
 });
 
 document.querySelector('#saveProject').addEventListener('click', () => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    walls: state.walls,
+    rooms: state.rooms,
+    doors: state.doors,
+    windows: state.windows,
+    material: state.material,
+    isNight: state.isNight,
+  }));
   setStatus('Saved locally');
 });
 
 document.querySelector('#loadProject').addEventListener('click', () => {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (!saved) {
-    setStatus('No saved design');
+    setStatus('No saved project');
     return;
   }
-  Object.assign(state, JSON.parse(saved), { pendingPoint: null });
-  materialSelect.value = state.material;
-  wallHeight.value = state.wallHeight;
-  wallHeightLabel.textContent = `${state.wallHeight.toFixed(1)} m`;
-  setStatus('Loaded');
+  Object.assign(state, JSON.parse(saved), {
+    isDrawing: false,
+    currentWall: null,
+    currentRoom: null,
+  });
+  document.querySelectorAll('[data-material]').forEach((item) => item.classList.toggle('active', item.dataset.material === state.material));
+  setStatus('Loaded saved project');
   renderAll();
 });
 
 document.querySelector('#exportProject').addEventListener('click', () => {
-  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const payload = {
+    app: 'HomeForge AI Advanced Builder',
+    unitScale: '20px = 1m',
+    exportedAt: new Date().toISOString(),
+    walls: state.walls,
+    rooms: state.rooms,
+    doors: state.doors,
+    windows: state.windows,
+    material: state.material,
+    metrics: {
+      floorAreaSqm: Math.round(state.rooms.reduce((sum, room) => sum + roomArea(room), 0)),
+      wallLengthM: Number(state.walls.reduce((sum, wall) => sum + lineLength(wall), 0).toFixed(1)),
+    },
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = 'homeforge-design.json';
+  link.download = 'homeforge-advanced-builder.json';
   link.click();
   URL.revokeObjectURL(url);
   setStatus('Exported JSON');
 });
 
-state.walls = [
-  { x: 120, y: 120, x2: 560, y2: 120 },
-  { x: 560, y: 120, x2: 560, y2: 400 },
-  { x: 560, y: 400, x2: 120, y2: 400 },
-  { x: 120, y: 400, x2: 120, y2: 120 },
-  { x: 320, y: 120, x2: 320, y2: 400 },
-  { x: 120, y: 260, x2: 560, y2: 260 },
-];
-state.markers = [
-  { x: 220, y: 120, type: 'window' },
-  { x: 320, y: 400, type: 'door' },
-];
 renderAll();
