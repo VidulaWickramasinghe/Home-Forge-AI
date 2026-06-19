@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 const html = await readFile('src/index.html', 'utf8');
 const css = await readFile('src/styles.css', 'utf8');
 const js = await readFile('src/app.js', 'utf8');
+const threeBuilderJs = await readFile('src/three-builder.js', 'utf8');
 const builderHtml = await readFile('src/builder/index.html', 'utf8');
 const builderJs = await readFile('src/builder/builder.js', 'utf8');
 const builderCss = await readFile('src/builder/builder.css', 'utf8');
@@ -14,17 +15,25 @@ const requiredHome = [
   'Contractor Brief',
   'cinematic-preview',
   'immersive-prototype-scene',
+  'importmap',
+  'heroWebGL',
+  'prototypeWebGL',
+  'exportGlbBtn',
 ];
 const missingHome = requiredHome.filter((text) => !html.includes(text));
 if (missingHome.length) throw new Error(`Missing required home content: ${missingHome.join(', ')}`);
 
-const requiredCss = ['INSANE 3D RETOUCH', '.cinematic-preview', '.immersive-prototype-scene', '.orbit-help', '@media'];
+const requiredCss = ['INSANE 3D RETOUCH', 'REAL WEBGL / THREE.JS UPGRADE', '.webgl-hero-mount', '.webgl-prototype-mount', '.prototype-scene.webgl-active', '@media'];
 const missingCss = requiredCss.filter((text) => !css.includes(text));
 if (missingCss.length) throw new Error(`Missing required CSS: ${missingCss.join(', ')}`);
 
-const requiredJs = ['setupPrototypeOrbit', 'setCameraPreset', 'applyPrototypeCamera', 'localStorage', 'Blob'];
+const requiredJs = ['setupPrototypeOrbit', 'setCameraPreset', 'applyPrototypeCamera', 'initHeroWebGL', 'initWebGLPrototypeBuilder', 'exportPrototypeGLB', 'localStorage', 'Blob'];
 const missingJs = requiredJs.filter((text) => !js.includes(text));
 if (missingJs.length) throw new Error(`Missing required app logic: ${missingJs.join(', ')}`);
+
+const requiredThreeBuilder = ['GLTFExporter', 'OrbitControls', 'WebGLRenderer', 'createHouseModel', 'exportPrototypeGLB'];
+const missingThreeBuilder = requiredThreeBuilder.filter((text) => !threeBuilderJs.includes(text));
+if (missingThreeBuilder.length) throw new Error(`Missing required Three.js builder logic: ${missingThreeBuilder.join(', ')}`);
 
 const requiredBuilder = ['2D Floor Plan', 'Live 3D Massing', 'Save', 'Download JSON'];
 const missingBuilder = requiredBuilder.filter((text) => !builderHtml.includes(text));

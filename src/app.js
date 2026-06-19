@@ -1,3 +1,10 @@
+import {
+  initHeroWebGL,
+  initWebGLPrototypeBuilder,
+  updateWebGLPrototype,
+  exportPrototypeGLB
+} from "./three-builder.js";
+
 const state = {
   landArea: 600,
   landShape: "rectangular",
@@ -296,6 +303,7 @@ function render() {
   applyGarage();
   applyFeatures();
   updateSummary();
+  updateWebGLPrototype(state);
 }
 function syncStateFromControls() {
   state.landArea = Number(controls.landArea.value);
@@ -600,6 +608,11 @@ function setupEventListeners() {
   document.getElementById("exportDesignBtn").addEventListener("click", exportDesign);
   document.getElementById("copyBriefBtn").addEventListener("click", copyBrief);
   document.getElementById("generateAiBtn").addEventListener("click", generateAiPrototype);
+  document
+    .getElementById("exportGlbBtn")
+    ?.addEventListener("click", exportPrototypeGLB);
+  initHeroWebGL();
+  initWebGLPrototypeBuilder(state);
   handleViewTabs();
   setupPrototypeOrbit();
   setupPhotoUpload();

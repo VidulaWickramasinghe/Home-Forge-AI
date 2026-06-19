@@ -68,29 +68,8 @@
             <span>Live Prototype Preview</span>
             <strong>Interactive 3D Concept</strong>
           </div>
-          <div class="mini-scene cinematic-hero-scene">
-            <div class="hero-orbit-ring ring-one"></div>
-            <div class="hero-orbit-ring ring-two"></div>
-            <div class="hero-orbit-ring ring-three"></div>
-            <div class="mini-land enhanced-mini-land">
-              <div class="mini-land-thickness"></div>
-              <div class="mini-road"></div>
-              <div class="mini-house enhanced-mini-house">
-                <div class="mini-roof cinematic-roof"></div>
-                <div class="mini-body cinematic-body">
-                  <span class="mini-window mini-window-one"></span>
-                  <span class="mini-window mini-window-two"></span>
-                  <span class="mini-window mini-window-three"></span>
-                  <span class="mini-door"></span>
-                </div>
-              </div>
-              <div class="mini-garage cinematic-garage"></div>
-              <div class="mini-pool cinematic-pool"></div>
-              <div class="mini-deck">Outdoor</div>
-              <div class="mini-tree mini-tree-one"></div>
-              <div class="mini-tree mini-tree-two"></div>
-              <div class="mini-tree mini-tree-three"></div>
-            </div>
+          <div class="mini-scene webgl-hero-scene">
+            <div id="heroWebGL" class="webgl-hero-mount"></div>
           </div>
           <div class="preview-metrics">
             <span>Land + House</span>
@@ -119,6 +98,9 @@
             </button>
             <button class="primary-button small" id="exportDesignBtn" type="button">
               Export JSON
+            </button>
+            <button class="primary-button small" id="exportGlbBtn" type="button">
+              Export GLB
             </button>
           </div>
         </div>
@@ -284,6 +266,7 @@
               </div>
             </div>
             <div class="prototype-scene immersive-prototype-scene" id="prototypeScene">
+              <div id="prototypeWebGL" class="webgl-prototype-mount"></div>
               <div class="scene-vignette"></div>
               <div class="sun-orb"></div>
               <div class="orbit-help">
@@ -475,6 +458,14 @@
         professionals.
       </p>
     </footer>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.184.0/examples/jsm/"
+        }
+      }
+    </script>
     <script src="./app.js" type="module"></script>
   </body>
 </html>
