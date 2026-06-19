@@ -375,7 +375,7 @@ function createHouseModel(design, options = {}) {
   return createHousePrototypeModel(design, options);
 }
 function createHousePrototypeModel(design, options = {}) {
-  const mats = createMaterials(design); const model = new THREE.Group(); model.name = "HomeForge AI 3D Prototype";
+  const mats = createMaterials(design); const model = new THREE.Group(); model.name = "HomeForge 3D Prototype";
   if (options.viewMode === "interior") model.add(createInteriorModel(design, mats)); else { model.add(createLandElements(design, mats)); const house = createExteriorModel(design, mats, options); if (options.viewMode === "land") house.scale.setScalar(0.92); model.add(house); }
   model.position.y = options.hero ? 0.08 : -0.25; model.rotation.y = options.hero ? -0.45 : 0; if (options.hero) model.scale.setScalar(1); return model;
 }

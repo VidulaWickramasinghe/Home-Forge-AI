@@ -304,7 +304,7 @@ function getFeatureText() {
 function updateBrief() {
   const cost = calculateCost();
   const area = calculateArea();
-  output.briefOutput.textContent = `HOMEFORGE AI — DREAM HOUSE PROTOTYPE BRIEF
+  output.briefOutput.textContent = `HOMEFORGE — DREAM HOUSE PROTOTYPE BRIEF
 Project Purpose:
 Create a practical 3D concept prototype of a future dream house before preparing professional construction plans.
 Prototype Summary:
@@ -509,7 +509,7 @@ function resetDesign() {
 }
 function exportDesign() {
   const payload = {
-    projectName: "HomeForge AI Dream House Prototype",
+    projectName: "HomeForge Dream House Prototype",
     createdAt: new Date().toISOString(),
     design: state,
     measurements: {
