@@ -2,8 +2,8 @@ import {
   initHeroWebGL,
   initWebGLPrototypeBuilder,
   updateWebGLPrototype,
-  exportPrototypeGLB,
-  focusWebGLPrototypeView
+  setPrototypeView,
+  exportPrototypeGLB
 } from "./three-builder.js";
 
 const state = {
@@ -24,6 +24,15 @@ const state = {
   balcony: true,
   outdoorArea: true,
   smartHome: false,
+  cctvCameras: true,
+  fence: true,
+  frontGate: true,
+  miniGym: false,
+  miniBar: false,
+  fishTank: true,
+  officeRoom: true,
+  babyRoom: false,
+  laundryRoom: true,
   bedrooms: 4,
   bathrooms: 3,
   furnishing: "modern"
@@ -46,10 +55,21 @@ const controls = {
   balcony: document.getElementById("balcony"),
   outdoorArea: document.getElementById("outdoorArea"),
   smartHome: document.getElementById("smartHome"),
+  cctvCameras: document.getElementById("cctvCameras"),
+  fence: document.getElementById("fence"),
+  frontGate: document.getElementById("frontGate"),
+  miniGym: document.getElementById("miniGym"),
+  miniBar: document.getElementById("miniBar"),
+  fishTank: document.getElementById("fishTank"),
+  officeRoom: document.getElementById("officeRoom"),
+  babyRoom: document.getElementById("babyRoom"),
+  laundryRoom: document.getElementById("laundryRoom"),
   bedrooms: document.getElementById("bedrooms"),
   bathrooms: document.getElementById("bathrooms"),
   furnishing: document.getElementById("furnishing")
 };
+let activePrototypeView = "exterior";
+
 const output = {
   storiesValue: document.getElementById("storiesValue"),
   basementValue: document.getElementById("basementValue"),
@@ -148,6 +168,15 @@ function calculateCost() {
     (state.balcony ? 18000 : 0) +
     (state.outdoorArea ? 22000 : 0) +
     (state.smartHome ? 12000 : 0) +
+    (state.cctvCameras ? 6500 : 0) +
+    (state.fence ? 18500 : 0) +
+    (state.frontGate ? 9500 : 0) +
+    (state.miniGym ? 16000 : 0) +
+    (state.miniBar ? 14500 : 0) +
+    (state.fishTank ? 7800 : 0) +
+    (state.officeRoom ? 18000 : 0) +
+    (state.babyRoom ? 12000 : 0) +
+    (state.laundryRoom ? 10500 : 0) +
     state.basement * 65000;
   const landPrep = Math.round(state.landArea * 32);
   return Math.round(area * baseRate + roofExtra + garageExtra + featureExtras + landPrep);
@@ -261,12 +290,21 @@ function getFeatureText() {
   if (state.balcony) features.push("balcony");
   if (state.outdoorArea) features.push("outdoor area");
   if (state.smartHome) features.push("smart home");
+  if (state.cctvCameras) features.push("CCTV");
+  if (state.fence) features.push("fence");
+  if (state.frontGate) features.push("front gate");
+  if (state.miniGym) features.push("mini gym");
+  if (state.miniBar) features.push("mini bar");
+  if (state.fishTank) features.push("fish tank");
+  if (state.officeRoom) features.push("office");
+  if (state.babyRoom) features.push("baby room");
+  if (state.laundryRoom) features.push("laundry");
   return features.length ? features.join(", ") : "basic";
 }
 function updateBrief() {
   const cost = calculateCost();
   const area = calculateArea();
-  output.briefOutput.textContent = `HOMEFORGE AI — DREAM HOUSE PROTOTYPE BRIEF
+  output.briefOutput.textContent = `HOMEFORGE — DREAM HOUSE PROTOTYPE BRIEF
 Project Purpose:
 Create a practical 3D concept prototype of a future dream house before preparing professional construction plans.
 Prototype Summary:
@@ -291,6 +329,55 @@ Please convert this concept into a professional house plan, structural review, d
 Important:
 This is a concept prototype only. Final construction must be reviewed and approved by qualified builders, architects, engineers and local authorities.`;
 }
+
+function mapStateToHouseDesign(state) {
+  return {
+    land: {
+      area: Number(state.landArea) || 600,
+      shape: state.landShape || "rectangular",
+      hasGarden: Boolean(state.includeGarden),
+      hasPool: Boolean(state.includePool),
+      hasDriveway: true
+    },
+    building: {
+      stories: Number(state.stories) || 1,
+      basementLevels: Number(state.basement) || 0,
+      shape: state.houseShape || "modern-box",
+      garage: state.garage || "double",
+      roofStyle: state.roofStyle || "gable",
+      wallColor: state.houseColor || "#e5e7eb",
+      roofColor: state.roofColor || "#111827"
+    },
+    exterior: {
+      windowStyle: state.windowStyle || "wide",
+      doorStyle: state.doorStyle || "timber",
+      hasSolar: Boolean(state.solarPanels),
+      hasBalcony: Boolean(state.balcony),
+      hasOutdoorArea: Boolean(state.outdoorArea),
+      hasCctv: Boolean(state.cctvCameras),
+      hasFence: Boolean(state.fence),
+      hasGate: Boolean(state.frontGate)
+    },
+    interior: {
+      bedrooms: Number(state.bedrooms) || 4,
+      bathrooms: Number(state.bathrooms) || 3,
+      furnishingStyle: state.furnishing || "modern",
+      hasLivingRoom: true,
+      hasKitchen: true,
+      hasOffice: Boolean(state.officeRoom),
+      hasBabyRoom: Boolean(state.babyRoom),
+      hasLaundry: Boolean(state.laundryRoom),
+      hasMiniGym: Boolean(state.miniGym),
+      hasMiniBar: Boolean(state.miniBar),
+      hasFishTank: Boolean(state.fishTank)
+    },
+    estimate: {
+      areaM2: typeof calculateArea === "function" ? calculateArea() : 462,
+      costAUD: typeof calculateCost === "function" ? calculateCost() : 956600
+    }
+  };
+}
+
 function render() {
   document.documentElement.style.setProperty("--house-color", state.houseColor);
   document.documentElement.style.setProperty("--roof-color", state.roofColor);
@@ -304,7 +391,8 @@ function render() {
   applyGarage();
   applyFeatures();
   updateSummary();
-  updateWebGLPrototype(state);
+  const houseDesign = mapStateToHouseDesign(state);
+  updateWebGLPrototype(houseDesign, activePrototypeView);
 }
 function syncStateFromControls() {
   state.landArea = Number(controls.landArea.value);
@@ -324,6 +412,15 @@ function syncStateFromControls() {
   state.balcony = controls.balcony.checked;
   state.outdoorArea = controls.outdoorArea.checked;
   state.smartHome = controls.smartHome.checked;
+  state.cctvCameras = controls.cctvCameras.checked;
+  state.fence = controls.fence.checked;
+  state.frontGate = controls.frontGate.checked;
+  state.miniGym = controls.miniGym.checked;
+  state.miniBar = controls.miniBar.checked;
+  state.fishTank = controls.fishTank.checked;
+  state.officeRoom = controls.officeRoom.checked;
+  state.babyRoom = controls.babyRoom.checked;
+  state.laundryRoom = controls.laundryRoom.checked;
   state.bedrooms = Number(controls.bedrooms.value);
   state.bathrooms = Number(controls.bathrooms.value);
   state.furnishing = controls.furnishing.value;
@@ -347,6 +444,15 @@ function syncControlsFromState() {
   controls.balcony.checked = state.balcony;
   controls.outdoorArea.checked = state.outdoorArea;
   controls.smartHome.checked = state.smartHome;
+  controls.cctvCameras.checked = state.cctvCameras;
+  controls.fence.checked = state.fence;
+  controls.frontGate.checked = state.frontGate;
+  controls.miniGym.checked = state.miniGym;
+  controls.miniBar.checked = state.miniBar;
+  controls.fishTank.checked = state.fishTank;
+  controls.officeRoom.checked = state.officeRoom;
+  controls.babyRoom.checked = state.babyRoom;
+  controls.laundryRoom.checked = state.laundryRoom;
   controls.bedrooms.value = String(state.bedrooms);
   controls.bathrooms.value = String(state.bathrooms);
   controls.furnishing.value = state.furnishing;
@@ -386,6 +492,15 @@ function resetDesign() {
     balcony: true,
     outdoorArea: true,
     smartHome: false,
+    cctvCameras: true,
+    fence: true,
+    frontGate: true,
+    miniGym: false,
+    miniBar: false,
+    fishTank: true,
+    officeRoom: true,
+    babyRoom: false,
+    laundryRoom: true,
     bedrooms: 4,
     bathrooms: 3,
     furnishing: "modern"
@@ -394,7 +509,7 @@ function resetDesign() {
 }
 function exportDesign() {
   const payload = {
-    projectName: "HomeForge AI Dream House Prototype",
+    projectName: "HomeForge Dream House Prototype",
     createdAt: new Date().toISOString(),
     design: state,
     measurements: {
@@ -434,10 +549,13 @@ function handleViewTabs() {
     button.addEventListener("click", () => {
       buttons.forEach((btn) => btn.classList.remove("active"));
       button.classList.add("active");
-      const view = button.getAttribute("data-view") || "exterior";
-      model.prototypeScene.dataset.view = view;
-      setCameraPreset(view);
-      focusWebGLPrototypeView(view);
+      activePrototypeView = button.getAttribute("data-view") || "exterior";
+      model.prototypeScene.dataset.view = activePrototypeView;
+      setCameraPreset(activePrototypeView);
+      const houseDesign = mapStateToHouseDesign(state);
+      setPrototypeView(activePrototypeView);
+      // focusWebGLPrototypeView was replaced by setPrototypeView for the nested WebGL schema.
+      updateWebGLPrototype(houseDesign, activePrototypeView);
     });
   });
 }
@@ -564,6 +682,15 @@ function generateAiPrototype() {
   if (prompt.includes("solar")) state.solarPanels = true;
   if (prompt.includes("balcony")) state.balcony = true;
   if (prompt.includes("smart")) state.smartHome = true;
+  if (prompt.includes("cctv") || prompt.includes("camera")) state.cctvCameras = true;
+  if (prompt.includes("fence")) state.fence = true;
+  if (prompt.includes("gate")) state.frontGate = true;
+  if (prompt.includes("gym")) state.miniGym = true;
+  if (prompt.includes("bar")) state.miniBar = true;
+  if (prompt.includes("fish") || prompt.includes("aquarium")) state.fishTank = true;
+  if (prompt.includes("office")) state.officeRoom = true;
+  if (prompt.includes("baby") || prompt.includes("nursery")) state.babyRoom = true;
+  if (prompt.includes("laundry")) state.laundryRoom = true;
   if (prompt.includes("outdoor")) state.outdoorArea = true;
   if (prompt.includes("minimal")) state.furnishing = "minimal";
   if (prompt.includes("modern")) {
@@ -613,8 +740,10 @@ function setupEventListeners() {
   document
     .getElementById("exportGlbBtn")
     ?.addEventListener("click", exportPrototypeGLB);
+  const initialHouseDesign = mapStateToHouseDesign(state);
   initHeroWebGL();
-  initWebGLPrototypeBuilder(state);
+  initWebGLPrototypeBuilder(initialHouseDesign);
+  setPrototypeView(activePrototypeView);
   handleViewTabs();
   setupPrototypeOrbit();
   setupPhotoUpload();

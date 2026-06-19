@@ -3,16 +3,30 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="HomeForge AI advanced builder with rooms, wall drawing, live 3D preview, day/night lighting, save/load, and export." />
-    <title>HomeForge AI Advanced Builder</title>
+    <meta name="description" content="HomeForge advanced builder with rooms, wall drawing, live 3D preview, day/night lighting, save/load, and export." />
+    <title>HomeForge Advanced Builder</title>
     <link rel="stylesheet" href="../styles.css" />
     <link rel="stylesheet" href="./builder.css" />
   </head>
   <body class="builder-body">
     <header class="builder-topbar glass-panel">
       <a class="brand" href="/">
-        <span class="brand-mark">⌂</span>
-        <span>HomeForge AI Advanced Builder</span>
+        <span class="brand-mark" aria-hidden="true">
+          <svg class="brand-logo" viewBox="0 0 64 64" role="img">
+            <defs>
+              <linearGradient id="homeforgeLogoGradient" x1="10" y1="8" x2="54" y2="58" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stop-color="#67e8f9" />
+                <stop offset="0.54" stop-color="#38bdf8" />
+                <stop offset="1" stop-color="#fde68a" />
+              </linearGradient>
+            </defs>
+            <path class="logo-plate" d="M32 5 56 19v28L32 59 8 47V19L32 5Z" />
+            <path class="logo-roof" d="M18 32 32 18l14 14" />
+            <path class="logo-frame" d="M22 31v15h20V31" />
+            <path class="logo-spark" d="M32 27v19M24 38h16" />
+          </svg>
+        </span>
+        <span>HomeForge Advanced Builder</span>
       </a>
       <div class="topbar-actions">
         <button id="undoAction" title="Undo last action">↶ Undo</button>
