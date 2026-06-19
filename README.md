@@ -1,14 +1,52 @@
-HomeForge AI — Build Before You Build
+# HomeForge AI — Build Before You Build
 
-# A digital showroom where users can walk into the future of their home before construction begins.
+A premium, futuristic landing site for a 3D interactive house design and visualization platform. The experience presents HomeForge AI as a digital showroom where users can design, preview, estimate, and export dream home concepts before construction begins.
 
-1. Hero section with interactive 3D house
-2. Product concept section
-3. Module showcase
-4. 3D exploration preview
-5. AI assistant preview
-6. Cost estimation preview
-7. Builder workflow
-8. Technology/features section
-9. Pricing / plans preview
-10. Call-to-action section
+## Features
+
+- Dark luxury architecture-tech theme with glassmorphism UI
+- Animated CSS 3D house preview with selectable camera angles
+- Product concept, module showcase, workflow, AI assistant, builder MVP, and pricing sections
+- Responsive layout for desktop, tablet, and mobile
+- Zero runtime dependencies for simple static deployment
+- Docker, Netlify, and static `dist/` deployment support
+
+## Development
+
+```bash
+npm run dev
+```
+
+Open <http://localhost:3000>.
+
+## Build
+
+```bash
+npm run build
+npm start
+```
+
+The production site is generated in `dist/` and served at <http://localhost:3000>.
+
+## Checks
+
+```bash
+npm run check
+```
+
+## Deployment
+
+### Static hosting
+
+Run `npm run build`, then deploy the generated `dist/` folder to any static host.
+
+### Netlify
+
+The included `netlify.toml` builds with `npm run build` and publishes `dist/`.
+
+### Docker
+
+```bash
+docker build -t homeforge-ai .
+docker run --rm -p 3000:3000 homeforge-ai
+```
